@@ -158,77 +158,111 @@ class TaskManager(QObject):
         )
         return sorted(all_tasks, key=lambda x: x.task_id)
 
-    def get_task_queue(
-        self,
-        task: DownloadTask,
-    ):
+    def get_task_queue(self, task: DownloadTask):
+        """
+        Get the queue that corresponds to a task's state
+        """
         return self._STATE_Q_MAP[task.status.value + 2]
 
-    def add_task(
-        self,
-        task: DownloadTask,
-    ):
+    def set_event_loop(self, loop):
         """
-        添加任务。
+        Set the asyncio event loop for all queues
         """
+        self._event_loop = loop
+        for queue in self._STATE_Q_MAP:
+            queue.set_event_loop(loop)
 
+    def start(self):
+        """
+        Start the task manager
+        """
+        if not self._is_running and self._event_loop:
+            self._is_running = True
+            self._task_manager_task = asyncio.run_coroutine_threadsafe(
+                self._manage_tasks(), self._event_loop
+            )
+
+    def stop(self):
+        """
+        Stop the task manager
+        """
+        self._is_running = False
+        if self._task_manager_task:
+            self._task_manager_task.cancel()
+
+    async def _manage_tasks(self):
+        """
+        Main task management coroutine
+        """
+        try:
+            while self._is_running:
+                # Move tasks from pending to running as space becomes available
+                while not self._running.is_full and not self._pending.is_empty:
+                    task = self._pending.pop()
+                    if task:
+                        self._running.push(task)
+                        # Start the actual download task
+                        if hasattr(task, "start_async"):
+                            await task.start_async()
+
+                # Check for state changes
+                await asyncio.sleep(0.1)  # Small delay to prevent busy looping
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(f"Error in task management: {e}")
+
+    def add_task(self, task: DownloadTask):
+        """
+        Add a new task to the manager
+        """
+        # Connect to task status change signal
         connect_component(
             task.task,
             "_status_change_occurred",
-            self.status_change_occurred_handler,
+            self._status_change_handler,
         )
-        # q = self.get_task_queue(task)
-        with QMutexLocker(self._lock):
-            if self._pending.get_task(task) != -1:
-                return 0
-            else:
-                self._pending.push(task)
-                task.start()
-                return 1
-                # todo push add condition
-        self.running_task_manage()
 
-    @thread
-    def status_change_occurred_handler(
-        self,
-        task: DownloadTask,
-        original_status,
-        new_status,
-    ):
-        with QMutexLocker(self._lock):
-            t = self._STATE_Q_MAP[original_status.value + 2].pop(task=task)
-            assert t is not None
-            self._STATE_Q_MAP[new_status.value + 2].push(task=t)
+        # Add to pending queue if not already there
+        if self._pending.get_task_index(task) == -1:
+            self._pending.push(task)
+            return 1
+        return 0
 
-        if original_status == new_status:
-            return
-        elif new_status == TaskState.CANCELED:
-            self._cancel_task_occurred.emit(task)
-            self.reid(task.task_id)
-        self.running_task_manage()
+    def _status_change_handler(self, task: DownloadTask, original_status, new_status):
+        """
+        Handle task status changes
+        """
+        # Move task between queues based on status change
+        original_queue = self._STATE_Q_MAP[original_status.value + 2]
+        new_queue = self._STATE_Q_MAP[new_status.value + 2]
 
-    @thread
-    def running_task_manage(self):
-        try:
-            if self._running.is_full:
-                return
-            with QMutexLocker(self._lock):
-                while not self._running.is_full and not self._pending.is_empty:
-                    self._running.push(self._pending.pop())
-            for task in self._running:
-                # task.start()
-                task.task.start_task()
-        except:
-            pass
+        # Remove from original queue
+        removed_task = original_queue.pop(task=task)
+        if removed_task is not None:
+            # Add to new queue
+            new_queue.push(task=removed_task)
 
-    def reid(self, task_id):
-        with QMutexLocker(self._lock):
-            for q in [
-                self._failed,
-                self._finished,
-                self._running,
-                self._pending,
-                self._paused,
-            ]:
-                if not q.sorted:
-                    q.reid(task_id)
+        # Handle special cases
+        if original_status != new_status:
+            if new_status == TaskState.CANCELED:
+                self._cancel_task_occurred.emit(task)
+                self._reindex_tasks(task.task_id)
+
+            # Trigger task management
+            if self._event_loop and self._is_running:
+                asyncio.run_coroutine_threadsafe(self._manage_tasks(), self._event_loop)
+
+    def _reindex_tasks(self, task_id):
+        """
+        Re-index all tasks after one is canceled
+        """
+        for queue in [
+            self._failed,
+            self._finished,
+            self._running,
+            self._pending,
+            self._paused,
+        ]:
+            if not queue.sorted:
+                queue.reid(task_id)
