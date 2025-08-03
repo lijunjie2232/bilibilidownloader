@@ -76,7 +76,7 @@ class Ui_DownloadTask(object):
             "}"
         )
         self.progress_bar.setMaximum(100)
-        self.progress_bar.setValue(100)
+        self.progress_bar.setValue(50)
         self.progress_bar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setInvertedAppearance(False)
@@ -101,10 +101,10 @@ class Ui_DownloadTask(object):
         self.thumbnail_label.setAutoFillBackground(True)
         self.thumbnail_label.setScaledContents(True)
         self.thumbnail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.pause_or_resume_btn = QPushButton(DownloadTask)
-        self.pause_or_resume_btn.setObjectName("pause_or_resume_btn")
-        self.pause_or_resume_btn.setEnabled(True)
-        self.pause_or_resume_btn.setGeometry(QRect(562, 8, 24, 24))
+        self.pause_btn = QPushButton(DownloadTask)
+        self.pause_btn.setObjectName("pause_btn")
+        self.pause_btn.setEnabled(True)
+        self.pause_btn.setGeometry(QRect(562, 8, 24, 24))
         icon = QIcon()
         icon.addFile(
             ":/icon/bilibilidownloader/ui/assert/pause.svg",
@@ -112,8 +112,8 @@ class Ui_DownloadTask(object):
             QIcon.Mode.Normal,
             QIcon.State.Off,
         )
-        self.pause_or_resume_btn.setIcon(icon)
-        self.pause_or_resume_btn.setIconSize(QSize(24, 16))
+        self.pause_btn.setIcon(icon)
+        self.pause_btn.setIconSize(QSize(24, 16))
         self.cancel_btn = QPushButton(DownloadTask)
         self.cancel_btn.setObjectName("cancel_btn")
         self.cancel_btn.setGeometry(QRect(562, 40, 24, 24))
@@ -155,6 +155,19 @@ class Ui_DownloadTask(object):
         self.debug_btn.setGeometry(QRect(420, 10, 24, 24))
         self.debug_btn.setIcon(icon)
         self.debug_btn.setIconSize(QSize(24, 16))
+        self.resume_btn = QPushButton(DownloadTask)
+        self.resume_btn.setObjectName("resume_btn")
+        self.resume_btn.setEnabled(True)
+        self.resume_btn.setGeometry(QRect(562, 8, 24, 24))
+        icon2 = QIcon()
+        icon2.addFile(
+            ":/icon/bilibilidownloader/ui/assert/resume.svg",
+            QSize(),
+            QIcon.Mode.Normal,
+            QIcon.State.Off,
+        )
+        self.resume_btn.setIcon(icon2)
+        self.resume_btn.setIconSize(QSize(24, 16))
 
         self.retranslateUi(DownloadTask)
 
@@ -175,7 +188,7 @@ class Ui_DownloadTask(object):
         self.thumbnail_label.setText(
             QCoreApplication.translate("DownloadTask", "No Pic", None)
         )
-        self.pause_or_resume_btn.setText("")
+        self.pause_btn.setText("")
         self.cancel_btn.setText("")
         self.id_label.setText(QCoreApplication.translate("DownloadTask", "1000", None))
         self.vname_label.setText(
@@ -188,5 +201,6 @@ class Ui_DownloadTask(object):
             QCoreApplication.translate("DownloadTask", "pending", None)
         )
         self.debug_btn.setText("")
+        self.resume_btn.setText("")
 
     # retranslateUi
