@@ -1,7 +1,7 @@
 import math
 from pathlib import Path
 from shutil import move, rmtree
-from traceback import print_exc
+from traceback import print_exc, print_stack
 
 import curl_cffi
 import requests
@@ -74,6 +74,7 @@ import aiohttp
 
 class DownloadTaskWidget(QWidget, Ui_DownloadTask):
     _op_occured = Signal(TaskOp)  # 0: cancel, 1: pause, 2: resume
+    _status_changed = Signal(int, TaskState, TaskState)
 
     def __init__(
         self,
@@ -105,10 +106,16 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             self._save_dir /= self._vname
         self._save_dir.mkdir(parents=True, exist_ok=True)
 
-        # self._status_mutex = QMutex()
+        self._status = TaskState.PENDING
+        self._status_mutex = QRecursiveMutex()
         self._op_mutex = QMutex()
         self._condition = QWaitCondition()
-        self._event_loop = None
+        self._download_task = DownloadTask(
+            self._analyze_task,
+            self._save_dir,
+            self._id,
+            self,
+        )
 
         self.resume_icon = None
         self.pause_icon = None
@@ -164,18 +171,12 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
 
         return f"{padded_id}_{self._analyze_task.title}"
 
-    def set_event_loop(self, loop):
-        """
-        Set the asyncio event loop for this task widget
-        """
-        self._event_loop = loop
-
     def debug_handler(self):
         pass
 
     @property
     def task(self):
-        return self._task
+        return self._download_task
 
     def icon_init(self):
         self.resume_icon = QIcon()
@@ -207,37 +208,50 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         self.pause_btn.setIconSize(_ICON_SIZE)
 
     @property
+    def status(self):
+        return self._status
+
+    @property
     def status_mutex(self):
         return self._status_mutex
 
+    def set_status(self, status: TaskState):
+        with QMutexLocker(self._status_mutex):
+            original_status = self._status
+            self._status = status
+            self._status_changed.emit(self.id, original_status, status)
+
     def resume(
         self,
-        emit=False,
     ):
         with QMutexLocker(self._op_mutex):
-            self.resume_btn.setVisible(False)
-            self.pause_btn.setVisible(True)
-            self._op_occured.emit(TaskOp.RESUME)
-            # self._condition.wakeAll()
+            # self.resume_btn.setVisible(False)
+            # self.pause_btn.setVisible(True)
+            # self._op_occured.emit(TaskOp.RESUME)
+            # # self._condition.wakeAll()
+            self._download_task.resume()
 
     def pause(
         self,
-        emit=False,
     ):
         with QMutexLocker(self._op_mutex):
-            self.resume_btn.setVisible(True)
-            self.pause_btn.setVisible(False)
-            self._op_occured.emit(TaskOp.PAUSE)
+            # self.resume_btn.setVisible(True)
+            # self.pause_btn.setVisible(False)
+            # self._op_occured.emit(TaskOp.PAUSE)
+            self._download_task.pause()
 
     def cancel(
         self,
-        emit=False,
     ):
         with QMutexLocker(self._op_mutex):
             self._op_occured.emit(TaskOp.CANCEL)
-            # self._condition.wakeAll()
+            self._download_task.cancel()
 
-    def update_progress(self, downloaded: int, total: int):
+    def update_progress(
+        self,
+        downloaded: int,
+        total: int,
+    ):
         if not self.progress_bar.isVisible():
             self.progress_bar.setVisible(True)
         self.progress_bar.setValue(downloaded)
@@ -247,14 +261,31 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
     def update_status_label(self, text):
         self.status_label.setText(text)
 
+    def _on_task_error(
+        self,
+        exception: Exception,
+    ):
+        logger.error(f"Task {self._id} error: {exception}")
+        self.set_status(TaskState.FAILED)
+    
+    def _on_task_finished(self, result:bool):
+        with QMutexLocker(self._status_mutex):
+            if result:
+                self.set_status(TaskState.FINISHED)
+            else:
+                if self.status == TaskState.RUNNING:
+                    self.set_status(TaskState.FAILED)
+
 
 class DownloadTask(QThread):
     __CONFIG__ = Config()
     __SESSION__ = copy_session(__CONFIG__.session)
 
-    _status_change_occurred = Signal(TaskState, TaskState)
+    _task_result_occurred = Signal(bool)
+    _task_info_occurred = Signal(str, str)
+    _task_error_occurred = Signal(Exception)
 
-    _status_label_update_occured = Signal(str)  # 用于更新 QLabel 的文本
+    # _status_label_update_occured = Signal(str)  # 用于更新 QLabel 的文本
     _progress_bar_update_occured = Signal(int, int)  # 用于更新进度条
 
     def __init__(
@@ -278,17 +309,15 @@ class DownloadTask(QThread):
         self._video: DashStream = self._task.selected_video
         self._audio: DashStream = self._task.selected_audio
 
-        self._status = TaskState.PENDING
-        self._status_mutex = QMutex()
+        # self._status = TaskState.PENDING
+        # self._status_mutex = QMutex()
         # self._status_mutex = QRecursiveMutex()
-        self._condition = QWaitCondition()
+        # self._condition = QWaitCondition()
         self._event_loop = None
 
         # net component
         self.client = None
         self._init_download()
-
-        self.pend()
 
     def _init_download(self):
         self.client = curl_cffi.AsyncSession(
@@ -301,13 +330,6 @@ class DownloadTask(QThread):
             impersonate="chrome",
             http_version="v3",
         )
-        self.set_event_loop()
-
-    def set_event_loop(self, loop):
-        """
-        Set the asyncio event loop for this task widget
-        """
-        self._event_loop = loop
 
     @property
     def task(self):
@@ -320,38 +342,6 @@ class DownloadTask(QThread):
     def set_id(self, id):
         self._id = id
         self.id_label.setText(str(id + 1))
-
-    @property
-    def status(self):
-        return self._status
-
-    @property
-    def status_mutex(self):
-        return self._status_mutex
-
-    def resume(
-        self,
-        emit=False,
-    ):
-        pass
-
-    def pause(
-        self,
-        emit=False,
-    ):
-        pass
-
-    def cancel(
-        self,
-        emit=False,
-    ):
-        pass
-
-    def pend(
-        self,
-        emit=False,
-    ):
-        pass
 
     async def async_download_file(
         self,
@@ -423,90 +413,85 @@ class DownloadTask(QThread):
                     continue  # 尝试备用链接
                 else:
                     logger.warning(f"无法下载 {desc}：{e}", level="error")
-                    return False
+                    return e
 
     async def async_download(self):
         """
         Async version of run method
         """
+        try:
+            self._task_info_occurred.emit("正在分析...", "")
 
-        self._status_label_update_occured.emit("正在分析...")
+            video = self._video["stream"]
+            audio = self._audio["stream"] if self._audio else None
+            assert isinstance(video, DashStream), NotImplementedError()
+            assert audio is None or isinstance(audio, DashStream), NotImplementedError()
+            ori_vfmt = "m4s"
+            ori_afmt = "m4s"
+            if len(video.base_url.split("?")[0].split(".")) > 2:
+                ori_vfmt = video.base_url.split("?")[0].split(".")[-1]
+            if len(audio.base_url.split("?")[0].split(".")) > 2:
+                ori_afmt = audio.base_url.split("?")[0].split(".")[-1]
+            tmp_video_path = self._save_dir / f"{self._filename}_v.{ori_vfmt}"
+            tmp_audio_path = self._save_dir / f"{self._filename}_a.{ori_afmt}"
+            out_path = self._save_dir / f"{self._filename}.{self._task.fmt}"
 
-        video = self._video["stream"]
-        audio = self._audio["stream"] if self._audio else None
-        assert isinstance(video, DashStream), NotImplementedError()
-        assert audio is None or isinstance(audio, DashStream), NotImplementedError()
-        ori_vfmt = "m4s"
-        ori_afmt = "m4s"
-        if len(video.base_url.split("?")[0].split(".")) > 2:
-            ori_vfmt = video.base_url.split("?")[0].split(".")[-1]
-        if len(audio.base_url.split("?")[0].split(".")) > 2:
-            ori_afmt = audio.base_url.split("?")[0].split(".")[-1]
-        tmp_video_path = self._save_dir / f"{self._filename}_v.{ori_vfmt}"
-        tmp_audio_path = self._save_dir / f"{self._filename}_a.{ori_afmt}"
-        out_path = self._save_dir / f"{self._filename}.{self._task.fmt}"
+            if out_path.exists():
+                self.set_finish(True)
+                return
+            tmp_out_path = self._save_dir / f"{out_path.stem}_tmp.{out_path.suffix}"
 
-        if out_path.exists():
-            self.set_finish(True)
-            return
-        tmp_out_path = self._save_dir / f"{out_path.stem}_tmp.{out_path.suffix}"
+            self._task_info_occurred.emit("正在下载视频", "")
 
-        self._status_label_update_occured.emit("正在下载视频")
+            if not self.signal_check():
+                return
 
-        if not self.signal_check():
-            return
+            result = await self.async_download_file(
+                url=video.base_url,
+                backup_url=video.backup_url,
+                output_path=tmp_video_path,
+                desc="video",
+            )
+            assert result is True, result
+            # self._task_info_occurred.emit("下载视频失败或取消", repr(result))
 
-        result = await self.async_download_file(
-            url=video.base_url,
-            backup_url=video.backup_url,
-            output_path=tmp_video_path,
-            desc="video",
-        )
-        if not result:
-            self._status_label_update_occured.emit("下载视频失败或取消")
-
-        elif audio:
-            self._status_label_update_occured.emit("正在下载音频")
+            # elif audio:
+            self._task_info_occurred.emit("正在下载音频", "")
             result = await self.async_download_file(
                 url=audio.base_url,
                 backup_url=audio.backup_url,
                 output_path=tmp_audio_path,
                 desc="audio",
             )
-            if not result:
-                self._status_label_update_occured.emit("下载音频失败或取消")
-            else:
-                self._status_label_update_occured.emit("正在合并文件")
-                if not self.signal_check():
-                    return
-                combine(
-                    v=tmp_video_path,
-                    a=tmp_audio_path,
-                    out_file=tmp_out_path,
-                    fmt=None if self._task.fmt != ori_vfmt else None,
-                    overwrite=True,
-                )
-                move(tmp_out_path, out_path)
+            assert result is True, result
+            # if result is not True:
+            # self._task_info_occurred.emit("下载音频失败或取消", repr(result))
+            # else:
+            self._task_info_occurred.emit("正在合并文件", "")
+            if not self.signal_check():
+                return
+            combine(
+                v=tmp_video_path,
+                a=tmp_audio_path,
+                out_file=tmp_out_path,
+                fmt=None if self._task.fmt != ori_vfmt else None,
+                overwrite=True,
+            )
+            move(tmp_out_path, out_path)
 
-        self._status_label_update_occured.emit("缓存清理")
-        clean_tmp(
-            tmp_video_path,
-            tmp_audio_path,
-        )
-        self.set_finish(result)
-
-    def set_finish(self, result):
-        with QMutexLocker(self._status_mutex):
-            if result:
-                self._status = TaskState.FINISHED
-                self._status_label_update_occured.emit("下载完成")
-            else:
-                self._status = TaskState.FAILED
-                self._status_label_update_occured.emit("下载未完成")
-
-    def set_status(self, status: TaskState):
-        with QMutexLocker(self._status_mutex):
-            self._status = status
+            self._task_info_occurred.emit("缓存清理", "")
+            clean_tmp(
+                tmp_video_path,
+                tmp_audio_path,
+            )
+            self._task_result_occurred(True)
+            self._task_info_occurred("下载完成", "")
+        except Exception as e:
+            print_exc()
+            print_stack()
+            self._task_error_occurred.emit(e)
+            self._task_info_occurred("下载失败", repr(e))
+            self._task_result_occurred(False)
 
     async def do_download(self):
         try:
@@ -535,3 +520,23 @@ class DownloadTask(QThread):
         finally:
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
             self._loop.close()
+
+    def pause(self):
+        try:
+            self.stop()
+            self.set_status(TaskState.PAUSED)
+        except Exception as e:
+            print_exc()
+
+    def resume(self):
+        try:
+            self.set_status(TaskState.PENDING)
+        except Exception as e:
+            print_exc()
+
+    def cancel(self):
+        try:
+            self.stop()
+            self.set_status(TaskState.CANCELED)
+        except Exception as e:
+            print_exc()
