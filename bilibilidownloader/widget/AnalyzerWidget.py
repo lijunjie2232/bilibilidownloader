@@ -953,3 +953,9 @@ class AnalyzeTask(
         with QMutexLocker(self._check_lock):
             self.checked = self.select_check.isChecked()
             self._check_action_occurred.emit(self.checked)
+
+    def __eq__(self, another_task):
+        if isinstance(another_task, AnalyzeTask):
+            return self._task.task == another_task
+        else:
+            return False
