@@ -62,8 +62,8 @@ class TaskOp(Enum):
     """Docstring for MyEnum."""
 
     CANCEL = -1
-    PAUSE = 0
-    RESUME = 1
+    PAUSE = 3
+    RESUME = 2
 
 
 # Add these imports at the top of the file
@@ -74,7 +74,7 @@ import aiohttp
 
 class DownloadTaskWidget(QWidget, Ui_DownloadTask):
     _op_occured = Signal(TaskOp)  # 0: cancel, 1: pause, 2: resume
-    _status_changed = Signal(int, TaskState, TaskState)
+    _status_change_occurred = Signal(TaskState, TaskState)
 
     def __init__(
         self,
@@ -115,6 +115,31 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             self._save_dir,
             self._id,
             self,
+        )
+        """
+        _task_result_occurred
+        _task_info_occurred
+        _task_error_occurred
+        _progress_bar_update_occured
+        
+        _on_task_error
+        _on_task_finished
+        _on_task_info
+        """
+        connect_component(
+            self._download_task,
+            "_task_result_occurred",
+            self._on_task_finished
+        )
+        connect_component(
+            self._download_task,
+            "_task_info_occurred",
+            self._on_task_info
+        )
+        connect_component(
+            self._download_task,
+            "_task_error_occurred",
+            self._on_task_error
         )
 
         self.resume_icon = None
@@ -175,8 +200,24 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         pass
 
     @property
+    def id(self):
+        return self._id
+
+    @property
     def task(self):
         return self._download_task
+
+    @property
+    def analyze_task(self):
+        return self._analyze_task
+
+    def __eq__(self, value):
+        if isinstance(value, DownloadTaskWidget):
+            return self._analyze_task == value.analyze_task
+        elif isinstance(value, AnalyzeTask):
+            return self._analyze_task == value
+        elif isinstance(value, DownloadTask):
+            return self._analyze_task == value.task
 
     def icon_init(self):
         self.resume_icon = QIcon()
@@ -215,11 +256,15 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
     def status_mutex(self):
         return self._status_mutex
 
+    @property
+    def op_mutex(self):
+        return self._op_mutex
+
     def set_status(self, status: TaskState):
         with QMutexLocker(self._status_mutex):
             original_status = self._status
             self._status = status
-            self._status_changed.emit(self.id, original_status, status)
+            self._status_change_occurred.emit(original_status, status)
 
     def resume(
         self,
@@ -229,7 +274,8 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             # self.pause_btn.setVisible(True)
             # self._op_occured.emit(TaskOp.RESUME)
             # # self._condition.wakeAll()
-            self._download_task.resume()
+            # self._download_task.resume()
+            self._op_occured.emit(TaskOp.RESUME)
 
     def pause(
         self,
@@ -238,14 +284,16 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             # self.resume_btn.setVisible(True)
             # self.pause_btn.setVisible(False)
             # self._op_occured.emit(TaskOp.PAUSE)
-            self._download_task.pause()
+            # self._download_task.pause()
+            self._op_occured.emit(TaskOp.PAUSE)
 
     def cancel(
         self,
     ):
         with QMutexLocker(self._op_mutex):
+            # self._op_occured.emit(TaskOp.CANCEL)
+            # self._download_task.cancel()
             self._op_occured.emit(TaskOp.CANCEL)
-            self._download_task.cancel()
 
     def update_progress(
         self,
@@ -267,14 +315,19 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
     ):
         logger.error(f"Task {self._id} error: {exception}")
         self.set_status(TaskState.FAILED)
-    
-    def _on_task_finished(self, result:bool):
+
+    def _on_task_finished(self, result: bool):
         with QMutexLocker(self._status_mutex):
             if result:
                 self.set_status(TaskState.FINISHED)
             else:
                 if self.status == TaskState.RUNNING:
                     self.set_status(TaskState.FAILED)
+
+    def _on_task_info(self, info, err=""):
+        self.update_status_label(info)
+        if err:
+            logger.error(err)
 
 
 class DownloadTask(QThread):
@@ -285,7 +338,6 @@ class DownloadTask(QThread):
     _task_info_occurred = Signal(str, str)
     _task_error_occurred = Signal(Exception)
 
-    # _status_label_update_occured = Signal(str)  # 用于更新 QLabel 的文本
     _progress_bar_update_occured = Signal(int, int)  # 用于更新进度条
 
     def __init__(
@@ -504,12 +556,20 @@ class DownloadTask(QThread):
 
     def stop(self):
         try:
+            if not self.is_running:
+                return
             if self._download_task:
                 self._download_task.cancel()
         except Exception as e:
             print_exc()
+            self._task_error_occurred.emit(e)
+        finally:
+            self._loop.run_until_complete(self._loop.shutdown_asyncgens())
+            self._loop.close()
 
     def run(self):
+        if self.is_running:
+            return
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
@@ -517,6 +577,7 @@ class DownloadTask(QThread):
             self._loop.run_until_complete(self.do_download())
         except asyncio.CancelledError as e:
             print(e)
+            self._task_error_occurred.emit(e)
         finally:
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
             self._loop.close()
@@ -524,19 +585,31 @@ class DownloadTask(QThread):
     def pause(self):
         try:
             self.stop()
-            self.set_status(TaskState.PAUSED)
         except Exception as e:
             print_exc()
+            self._task_error_occurred.emit(e)
 
     def resume(self):
         try:
-            self.set_status(TaskState.PENDING)
+            self.run()
         except Exception as e:
             print_exc()
+            self._task_error_occurred.emit(e)
 
     def cancel(self):
         try:
             self.stop()
-            self.set_status(TaskState.CANCELED)
         except Exception as e:
             print_exc()
+            self._task_error_occurred.emit(e)
+
+    @property
+    def is_running(self):
+        try:
+            if self._loop is not asyncio.get_running_loop():
+                return False
+            else:
+                return self._loop.is_closed()
+        except RuntimeError:
+            print("No loop running")
+            return False
