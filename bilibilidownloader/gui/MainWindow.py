@@ -232,21 +232,28 @@ class MainWindow(
 
         for t in task_list:
             self.add_download_task(
-                DownloadTask(
-                    DownloadTaskWidget(
-                        t,
-                        out_path,
-                        self._task_count,
-                    ),
-                    self._task_count,
-                )
+                t,
+                out_path,
             )
 
-    def add_download_task(self, task: DownloadTask):
+    def add_download_task(
+        self,
+        t,
+        out_path,
+    ):
+        task = (
+            DownloadTaskWidget(
+                t,
+                out_path,
+                self._task_count,
+            ),
+        )
         result = self._task_manager.add_task(task)
         if result:
             self._task_count += result
-            self.add_task(task.task)
+            self.add_task(task)
+        else:
+            del task
 
     def cancel_task_handler(self, task):
         task_widget = self.download_list.item(task.task_id)
