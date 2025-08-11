@@ -29,11 +29,11 @@ class AsyncTaskQueue(QObject):
         self._lock = QRecursiveMutex()
         self._loop = None
 
-    def set_event_loop(self, loop):
-        """
-        Set the asyncio event loop for this queue
-        """
-        self._loop = loop
+    # def set_event_loop(self, loop):
+    #     """
+    #     Set the asyncio event loop for this queue
+    #     """
+    #     self._loop = loop
 
     @property
     def is_full(self):
@@ -153,6 +153,7 @@ class TaskManager(QObject):
         self._event_loop = None
         self._task_manager_task = None
         self._is_running = False
+        self._manager_lock = QRecursiveMutex()  # Add lock for TaskManager
         self._init_manager()
 
     @property
@@ -160,15 +161,16 @@ class TaskManager(QObject):
         """
         Get all tasks in order
         """
-        all_tasks = (
-            self._failed.tasks
-            # + self._canceled.tasks
-            + self._finished.tasks
-            + self._running.tasks
-            + self._pending.tasks
-            + self._paused.tasks
-        )
-        return sorted(all_tasks, key=lambda x: x.id)
+        with QMutexLocker(self._manager_lock):
+            all_tasks = (
+                self._failed.tasks
+                # + self._canceled.tasks
+                + self._finished.tasks
+                + self._running.tasks
+                + self._pending.tasks
+                + self._paused.tasks
+            )
+            return sorted(all_tasks, key=lambda x: x.id)
 
     def _init_manager(self):
         """
@@ -182,33 +184,37 @@ class TaskManager(QObject):
         """
         Get the queue that corresponds to a task's state
         """
-        return self._STATE_Q_MAP[task.status.value + 2]
+        with QMutexLocker(self._manager_lock):
+            return self._STATE_Q_MAP[task.status.value + 2]
 
-    def set_event_loop(self, loop):
-        """
-        Set the asyncio event loop for all queues
-        """
-        self._event_loop = loop
-        for queue in self._STATE_Q_MAP:
-            queue.set_event_loop(loop)
+    # def set_event_loop(self, loop):
+    #     """
+    #     Set the asyncio event loop for all queues
+    #     """
+    #     with QMutexLocker(self._manager_lock):
+    #         self._event_loop = loop
+    #         for queue in self._STATE_Q_MAP:
+    #             queue.set_event_loop(loop)
 
     def start_manager(self):
         """
         Start the task manager
         """
-        if not self._is_running and self._event_loop:
-            self._is_running = True
-            self._task_manager_task = asyncio.run_coroutine_threadsafe(
-                self._manage_tasks(), self._event_loop
+        with QMutexLocker(self._manager_lock):
+            if not self._is_running and self._event_loop:
+                self._is_running = True
+                self._task_manager_task = asyncio.run_coroutine_threadsafe(
+                    self._manage_tasks(), self._event_loop
             )
 
     def stop_manager(self):
         """
         Stop the task manager
         """
-        self._is_running = False
-        if self._task_manager_task:
-            self._task_manager_task.cancel()
+        with QMutexLocker(self._manager_lock):
+            self._is_running = False
+            if self._task_manager_task:
+                self._task_manager_task.cancel()
 
     async def _manage_tasks(self):
         """
@@ -217,16 +223,20 @@ class TaskManager(QObject):
         while self._is_running:
             try:
                 # Move tasks from pending to running as space becomes available
-                while not self._running.is_full and not self._pending.is_empty:
-                    task_widget = self._pending.pop()
-                    if task_widget:
-                        assert task_widget.status == TaskState.PENDING
-                        # Set task status to RUNNING
-                        task_widget.set_status(
-                            TaskState.RUNNING,
-                        )
-                        # Start the actual download task
-                        task_widget.task.start()
+                if not self._running.is_full and not self._pending.is_empty:
+                    with QMutexLocker(self._manager_lock):
+                        while not self._running.is_full and not self._pending.is_empty:
+                            task_widget = self._pending.pop()
+                            if task_widget:
+                                assert task_widget.status == TaskState.PENDING
+                                # Set task status to RUNNING
+                                task_widget.set_status(
+                                    TaskState.RUNNING,
+                                    emit=False
+                                )
+                                self._pending.push(task_widget)
+                                # Start the actual download task
+                                task_widget.task.start()
 
                 # Check for state changes
                 await asyncio.sleep(1)  # Small delay to prevent busy looping
@@ -239,29 +249,31 @@ class TaskManager(QObject):
         """
         Add a new task to the manager
         """
-        # Connect to task status change signal
-        connect_component(
-            task,
-            "_status_change_occurred",
-            partial(self._status_change_handler, task),
-        )
-        connect_component(
-            task,
-            "_op_occured",
-            partial(self._op_handler, task),
-        )
+        with QMutexLocker(self._manager_lock):
+            # Connect to task status change signal
+            connect_component(
+                task,
+                "_status_change_occurred",
+                partial(self._status_change_handler, task),
+            )
+            connect_component(
+                task,
+                "_op_occured",
+                partial(self._op_handler, task),
+            )
 
-        # Add to pending queue if not already there
-        if self._pending.get_task_index(task) == -1:
-            self._pending.push(task)
-            return 1
-        return 0
+            # Add to pending queue if not already there
+            if self._pending.get_task_index(task) == -1:
+                self._pending.push(task)
+                return 1
+            return 0
 
     def _op_handler(self, task: DownloadTaskWidget, op: TaskOp):
-        with QMutexLocker(task.status_mutex):
-            if task.status.value == op.value:
-                return
-            task.set_status(TaskState(op.value))
+        with QMutexLocker(self._manager_lock):
+            with QMutexLocker(task.status_mutex):
+                if task.status.value == op.value:
+                    return
+                task.set_status(TaskState(op.value))
 
     def _status_change_handler(
         self, task: DownloadTaskWidget, original_status, new_status
@@ -269,56 +281,70 @@ class TaskManager(QObject):
         """
         Handle task status changes
         """
-        if isinstance(original_status, int):
-            original_status = TaskState(original_status)
-        if isinstance(new_status, int):
-            new_status = TaskState(new_status)
-        if original_status == new_status:
+        with QMutexLocker(self._manager_lock):
+            if isinstance(original_status, int):
+                original_status = TaskState(original_status)
+            if isinstance(new_status, int):
+                new_status = TaskState(new_status)
+            if original_status == new_status:
+                return
+            # Move task between queues based on status change
+            original_queue = self._STATE_Q_MAP[original_status.value + 2]
+            new_queue = self._STATE_Q_MAP[new_status.value + 2]
+
+            # Remove from original queue
+            removed_task = original_queue.pop(task=task)
+            if removed_task is not None:
+                # Add to new queue
+                new_queue.push(task=removed_task)
+
+            # If task is finished, stopped or failed, stop the download thread
+            if new_status in [TaskState.PAUSED, TaskState.CANCELED]:
+                task.task.stop()
+
+            # Handle special cases
+            if new_status == TaskState.CANCELED:
+                self._cancel_task_occurred.emit(task)
+                self._take_task(task)
+
+    def _take_task(self, task: DownloadTaskWidget):
+        """
+        Take a task out of the manager
+        """
+        if task not in self._canceled:
             return
-        # Move task between queues based on status change
-        original_queue = self._STATE_Q_MAP[original_status.value + 2]
-        new_queue = self._STATE_Q_MAP[new_status.value + 2]
-
-        # Remove from original queue
-        removed_task = original_queue.pop(task=task)
-        if removed_task is not None:
-            # Add to new queue
-            new_queue.push(task=removed_task)
-
-        # Handle special cases
-        if new_status == TaskState.CANCELED:
-            self._cancel_task_occurred.emit(task)
-            # self._reindex_tasks(task.id)
-
-        # If task is finished, stopped or failed, stop the download thread
-        if new_status in [TaskState.PAUSED, TaskState.CANCELED]:
-            task.task.stop()
+        self._canceled.pop(task)
+        self._reindex_tasks(task.id)
 
     def _reindex_tasks(self, task_id):
         """
         Re-index all tasks after one is canceled
         """
-        for queue in [
-            self._failed,
-            self._finished,
-            self._running,
-            self._pending,
-            self._paused,
-        ]:
-            if not queue.sorted:
-                queue.reid(task_id)
+        with QMutexLocker(self._manager_lock):
+            for queue in [
+                self._failed,
+                self._finished,
+                self._running,
+                self._pending,
+                self._paused,
+            ]:
+                if not queue.sorted:
+                    queue.reid(task_id)
 
     @property
     def is_running(self):
-        return self._is_running
+        with QMutexLocker(self._manager_lock):
+            return self._is_running
 
     @property
     def pending(self):
-        return self._pending
+        with QMutexLocker(self._manager_lock):
+            return self._pending
 
     @property
     def running(self):
-        return self._running
+        with QMutexLocker(self._manager_lock):
+            return self._running
 
 
 class TaskManagerThread(QThread):
@@ -333,19 +359,23 @@ class TaskManagerThread(QThread):
         while self.task_manager._is_running:
             try:
                 # Move tasks from pending to running as space becomes available
-                while not (
-                    self.task_manager.running.is_full
-                    or self.task_manager.pending.is_empty
-                ):
-                    task_widget = self.task_manager.pending.pop()
-                    if task_widget:
-                        assert task_widget.status == TaskState.PENDING
-                        # Set task status to RUNNING
-                        task_widget.set_status(
-                            TaskState.RUNNING,
-                        )
-                        # Start the actual download task
-                        task_widget.task.start()
+                if not self.task_manager.running.is_full and not self.task_manager.pending.is_empty:
+                    with QMutexLocker(self.task_manager._manager_lock):
+                        while not (
+                            self.task_manager.running.is_full
+                            or self.task_manager.pending.is_empty
+                        ):
+                            task_widget = self.task_manager.pending.pop()
+                            if task_widget:
+                                assert task_widget.status == TaskState.PENDING
+                                # Set task status to RUNNING
+                                task_widget.set_status(
+                                    TaskState.RUNNING,
+                                    emit=False,
+                                )
+                                self.task_manager.running.push(task_widget)
+                                # Start the actual download task
+                                task_widget.task.start()
             except Exception as e:
                 print(f"Error in task management: {e}")
             finally:
