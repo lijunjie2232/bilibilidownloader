@@ -124,13 +124,24 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         _on_task_info
         """
         connect_component(
-            self._download_task, "_task_result_occurred", self._on_task_finished
+            self._download_task,
+            "_task_result_occurred",
+            self._on_task_finished,
         )
         connect_component(
-            self._download_task, "_task_info_occurred", self._on_task_info
+            self._download_task,
+            "_task_info_occurred",
+            self._on_task_info,
         )
         connect_component(
-            self._download_task, "_task_error_occurred", self._on_task_error
+            self._download_task,
+            "_task_error_occurred",
+            self._on_task_error,
+        )
+        connect_component(
+            self._download_task,
+            "_progress_bar_update_occured",
+            self.update_progress,
         )
 
         self.resume_icon = None
