@@ -4,6 +4,7 @@ from time import sleep
 
 import qrcode
 from bilibilicore.api import Passport, User
+from bilibilicore.config import Config
 from PySide6.QtCore import QFile, QIODevice, QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QImage, QPixmap
 from PySide6.QtUiTools import QUiLoader
@@ -36,6 +37,7 @@ from bilibilidownloader.widget import (
     DownloadTaskWidget,
     LoginDialog,
     TaskManager,
+    TaskState,
 )
 
 # from bilibilidownloader.utils import ui_wired
@@ -52,7 +54,7 @@ class MainWindow(
         self.setupUi(self)
 
         self.analyze_type = "video"
-        self._task_manager = TaskManager()
+        self._task_manager = TaskManager(Config().download.parallel)
         self._task_count = 0
 
         self.link_type_selector_init(self.link_type_selector)
@@ -241,12 +243,10 @@ class MainWindow(
         t,
         out_path,
     ):
-        task = (
-            DownloadTaskWidget(
-                t,
-                out_path,
-                self._task_count,
-            ),
+        task = DownloadTaskWidget(
+            t,
+            out_path,
+            self.download_list.count(),
         )
         result = self._task_manager.add_task(task)
         if result:
@@ -255,11 +255,13 @@ class MainWindow(
         else:
             del task
 
-    def cancel_task_handler(self, task):
-        task_widget = self.download_list.item(task.task_id)
-        if task_widget and task_widget.is_cancelled():
+    def cancel_task_handler(self, task:DownloadTaskWidget):
+        task_widget = self.download_list.item(task.id)
+        if task_widget and task_widget.status == TaskState.CANCELED:
             # 移除该项
-            self.download_list.takeItem(task.task_id)
+            self.download_list.takeItem(task.id)
+            for id in range(self.download_list.count()):
+                self.download_list.item(id).set_id(id)
 
 
 if __name__ == "__main__":
