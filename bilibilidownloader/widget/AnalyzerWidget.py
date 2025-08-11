@@ -564,7 +564,7 @@ class VideoAnalyzer(QThread):
                     "pic_url": video["first_frame"],
                     "duration": video["duration"],
                 }
-                for video in videos[:10]
+                for video in videos
             ]
             self._inited = True
             self._videos_occurred.emit(self, task_list)
@@ -956,6 +956,9 @@ class AnalyzeTask(
 
     def __eq__(self, another_task):
         if isinstance(another_task, AnalyzeTask):
-            return self._task.task == another_task
+            if self is another_task:
+                return True
+            else:
+                return another_task._aid == self._aid and another_task._cid == self._cid
         else:
             return False
