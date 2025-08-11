@@ -260,11 +260,12 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
     def op_mutex(self):
         return self._op_mutex
 
-    def set_status(self, status: TaskState):
+    def set_status(self, status: TaskState, emit=True):
         with QMutexLocker(self._status_mutex):
             original_status = self._status
             self._status = status
-            self._status_change_occurred.emit(original_status, status)
+            if emit:
+                self._status_change_occurred.emit(original_status, status)
 
     def resume(
         self,
@@ -492,7 +493,9 @@ class DownloadTask(QThread):
             out_path = self._save_dir / f"{self._filename}.{self._task.fmt}"
 
             if out_path.exists():
-                self.set_finish(True)
+                self._task_result_occurred.emit(True)
+                self._progress_bar_update_occured(1, 1)
+                self._task_info_occurred.emit("下载完成", "")
                 return
             tmp_out_path = self._save_dir / f"{out_path.stem}_tmp{out_path.suffix}"
 
@@ -520,6 +523,7 @@ class DownloadTask(QThread):
             # self._task_info_occurred.emit("下载音频失败或取消", repr(result))
             # else:
             self._task_info_occurred.emit("正在合并文件", "")
+            self._progress_bar_update_occured.emit(0, 0)
             combine(
                 v=tmp_video_path,
                 a=tmp_audio_path,
@@ -535,6 +539,7 @@ class DownloadTask(QThread):
                 tmp_audio_path,
             )
             self._task_result_occurred.emit(True)
+            self._progress_bar_update_occured(1, 1)
             self._task_info_occurred.emit("下载完成", "")
         except Exception as e:
             print_exc()
