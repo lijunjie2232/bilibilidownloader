@@ -223,7 +223,6 @@ class TaskManager(QObject):
                         assert task_widget.status == TaskState.PENDING
                         # Set task status to RUNNING
                         task_widget.set_status(
-                            TaskState.PENDING,
                             TaskState.RUNNING,
                         )
                         # Start the actual download task
@@ -262,7 +261,7 @@ class TaskManager(QObject):
         with QMutexLocker(task.status_mutex):
             if task.status.value == op.value:
                 return
-            task.set_status(task.status, TaskState(op.value))
+            task.set_status(TaskState(op.value))
 
     def _status_change_handler(
         self, task: DownloadTaskWidget, original_status, new_status
@@ -343,7 +342,6 @@ class TaskManagerThread(QThread):
                         assert task_widget.status == TaskState.PENDING
                         # Set task status to RUNNING
                         task_widget.set_status(
-                            TaskState.PENDING,
                             TaskState.RUNNING,
                         )
                         # Start the actual download task
