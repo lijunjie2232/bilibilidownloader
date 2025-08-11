@@ -36,6 +36,7 @@ from bilibilidownloader.utils import (
     load_image_to_label,
     thread,
 )
+from copy import deepcopy
 
 from .AnalyzerWidget import AnalyzeTask
 
@@ -85,11 +86,6 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         super(DownloadTaskWidget, self).__init__()
         self.setupUi(self)
 
-        super(DownloadTaskWidget, self).__init__()
-        # self.ui = Ui_DownloadTask()
-        # self.ui.setupUi(self)
-        self.setupUi(self)
-
         self._analyze_task = analyze_task
         self._save_dir = Path(save_dir)
         self._vname = self._analyze_task.vname
@@ -112,6 +108,7 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         self._condition = QWaitCondition()
         self._download_task = DownloadTask(
             self._analyze_task,
+            self._filename,
             self._save_dir,
             self._id,
             self,
@@ -127,19 +124,13 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         _on_task_info
         """
         connect_component(
-            self._download_task,
-            "_task_result_occurred",
-            self._on_task_finished
+            self._download_task, "_task_result_occurred", self._on_task_finished
         )
         connect_component(
-            self._download_task,
-            "_task_info_occurred",
-            self._on_task_info
+            self._download_task, "_task_info_occurred", self._on_task_info
         )
         connect_component(
-            self._download_task,
-            "_task_error_occurred",
-            self._on_task_error
+            self._download_task, "_task_error_occurred", self._on_task_error
         )
 
         self.resume_icon = None
@@ -157,17 +148,17 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         connect_component(
             self.cancel_btn,
             "clicked",
-            self.cancel_handler,
+            self.cancel,
         )
         connect_component(
             self.pause_btn,
             "clicked",
-            self.pause_handler,
+            self.pause,
         )
         connect_component(
             self.resume_btn,
             "clicked",
-            self.resume_handler,
+            self.resume,
         )
 
         connect_component(
@@ -185,8 +176,6 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             )
         else:
             self.thumbnail_label.setText("No Image")
-
-        self.pend()
 
     def filename_gen(self):
         width = math.ceil(math.log10(self._analyze_task.total))
@@ -343,6 +332,7 @@ class DownloadTask(QThread):
     def __init__(
         self,
         task: AnalyzeTask,
+        filename,
         save_dir,
         id,
         parent=None,
@@ -353,10 +343,11 @@ class DownloadTask(QThread):
         self._download_task = None
         self._loop = None
         self._save_dir = Path(save_dir)
-        if self._task.vname and Config().download.auto_create_album_dir:
-            self._save_dir /= self._task.vname
+        # if self._task.vname and Config().download.auto_create_album_dir:
+        #     self._save_dir /= self._task.vname
         self._save_dir.mkdir(parents=True, exist_ok=True)
         self._id = id
+        self._filename = filename
 
         self._video: DashStream = self._task.selected_video
         self._audio: DashStream = self._task.selected_audio
@@ -420,7 +411,7 @@ class DownloadTask(QThread):
                 file_size = output_path.stat().st_size if output_path.exists() else 0
                 mode = "ab"
 
-                url, _, total_size, _, continual_download, _ = get_link(
+                url, _, total_size, _, continual_download, _, headers = get_link(
                     current_url,
                     dict(self.session.headers),
                     start=file_size,
@@ -439,9 +430,9 @@ class DownloadTask(QThread):
 
                 with open(output_path, mode) as f:
                     async with self.client.stream(
-                        url=self.url,
-                        headers=Config().session.headers,
-                        cookies=Config().session.cookies,
+                        url=url,
+                        headers=headers,
+                        cookies=self.session.cookies,
                         timeout=30,
                         method="GET",
                     ) as res:
@@ -461,6 +452,7 @@ class DownloadTask(QThread):
                 return True  # 成功下载
 
             except Exception as e:
+                print_exc()
                 if attempt == 1 and backup_url:
                     continue  # 尝试备用链接
                 else:
@@ -491,12 +483,9 @@ class DownloadTask(QThread):
             if out_path.exists():
                 self.set_finish(True)
                 return
-            tmp_out_path = self._save_dir / f"{out_path.stem}_tmp.{out_path.suffix}"
+            tmp_out_path = self._save_dir / f"{out_path.stem}_tmp{out_path.suffix}"
 
             self._task_info_occurred.emit("正在下载视频", "")
-
-            if not self.signal_check():
-                return
 
             result = await self.async_download_file(
                 url=video.base_url,
@@ -520,8 +509,6 @@ class DownloadTask(QThread):
             # self._task_info_occurred.emit("下载音频失败或取消", repr(result))
             # else:
             self._task_info_occurred.emit("正在合并文件", "")
-            if not self.signal_check():
-                return
             combine(
                 v=tmp_video_path,
                 a=tmp_audio_path,
@@ -536,14 +523,14 @@ class DownloadTask(QThread):
                 tmp_video_path,
                 tmp_audio_path,
             )
-            self._task_result_occurred(True)
-            self._task_info_occurred("下载完成", "")
+            self._task_result_occurred.emit(True)
+            self._task_info_occurred.emit("下载完成", "")
         except Exception as e:
             print_exc()
             print_stack()
             self._task_error_occurred.emit(e)
-            self._task_info_occurred("下载失败", repr(e))
-            self._task_result_occurred(False)
+            self._task_info_occurred.emit("下载失败", repr(e))
+            self._task_result_occurred.emit(False)
 
     async def do_download(self):
         try:
