@@ -1,3 +1,4 @@
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
@@ -191,6 +192,15 @@ def copy_session(session: Session):
     new_session.headers.update(deepcopy(session.headers))
 
     return new_session
+
+
+def sanitize_filename(filename, replacement="_"):
+    """
+    Replace invalid characters with underscore for cross-platform compatibility
+    """
+    # Replace forbidden characters with underscore
+    sanitized = re.sub(r'[<>:"/\\|?*\x00-\x1f]', replacement, filename)
+    return sanitized
 
 
 if __name__ == "__main__":
