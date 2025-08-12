@@ -35,6 +35,8 @@ from bilibilidownloader.utils import (
     get_link,
     load_image_to_label,
     thread,
+    m4s_merger,
+    sanitize_filename,
 )
 from copy import deepcopy
 
@@ -44,6 +46,8 @@ _CHUNK_SIZE = 1024 * 64
 _ICON_SIZE = QSize(16, 16)
 
 from enum import Enum, unique
+
+
 
 
 @unique
@@ -93,13 +97,14 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         self._quality_str = self._analyze_task.quality_str
         self._duration_str = self._analyze_task.duration_str
         self._id = id
+        self._alid = self._analyze_task.alid
 
         self._video: DashStream = self._analyze_task.selected_video
         self._audio: DashStream = self._analyze_task.selected_audio
         self._filename = self.filename_gen()
 
         if self._vname and Config().download.auto_create_album_dir:
-            self._save_dir /= self._vname
+            self._save_dir /= sanitize_filename(self._vname)
         self._save_dir.mkdir(parents=True, exist_ok=True)
 
         self._status = TaskState.PENDING
@@ -192,9 +197,9 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         width = math.ceil(math.log10(self._analyze_task.total))
 
         # 使用 f-string 补零
-        padded_id = str(self._id).rjust(width, "0")
+        padded_id = str(self._alid).rjust(width, "0")
 
-        return f"{padded_id}_{self._analyze_task.title}"
+        return sanitize_filename(f"{padded_id}_{self._analyze_task.title}")
 
     def debug_handler(self):
         pass
@@ -372,7 +377,6 @@ class DownloadTask(QThread):
 
         # net component
         self.client = None
-        self._init_download()
 
     def _init_download(self):
         self.client = curl_cffi.AsyncSession(
@@ -494,7 +498,7 @@ class DownloadTask(QThread):
 
             if out_path.exists():
                 self._task_result_occurred.emit(True)
-                self._progress_bar_update_occured(1, 1)
+                self._progress_bar_update_occured.emit(1, 1)
                 self._task_info_occurred.emit("下载完成", "")
                 return
             tmp_out_path = self._save_dir / f"{out_path.stem}_tmp{out_path.suffix}"
@@ -524,12 +528,17 @@ class DownloadTask(QThread):
             # else:
             self._task_info_occurred.emit("正在合并文件", "")
             self._progress_bar_update_occured.emit(0, 0)
-            combine(
-                v=tmp_video_path,
-                a=tmp_audio_path,
-                out_file=tmp_out_path,
-                fmt=None if self._task.fmt != ori_vfmt else None,
-                overwrite=True,
+            # combine(
+            #     v=tmp_video_path,
+            #     a=tmp_audio_path,
+            #     out_file=tmp_out_path,
+            #     fmt=None if self._task.fmt != ori_vfmt else None,
+            #     overwrite=True,
+            # )
+            m4s_merger(
+                tmp_video_path,
+                tmp_audio_path,
+                tmp_out_path,
             )
             move(tmp_out_path, out_path)
 
@@ -539,7 +548,7 @@ class DownloadTask(QThread):
                 tmp_audio_path,
             )
             self._task_result_occurred.emit(True)
-            self._progress_bar_update_occured(1, 1)
+            self._progress_bar_update_occured.emit(1, 1)
             self._task_info_occurred.emit("下载完成", "")
         except Exception as e:
             print_exc()
@@ -563,6 +572,8 @@ class DownloadTask(QThread):
                 return
             if self._download_task:
                 self._download_task.cancel()
+            if self.client:
+                self.client.stop()
         except Exception as e:
             print_exc()
             self._task_error_occurred.emit(e)
@@ -573,8 +584,10 @@ class DownloadTask(QThread):
     def run(self):
         if self.is_running:
             return
-        self._loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self._loop)
+        if self._loop is None:
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+            self._init_download()
 
         try:
             self._loop.run_until_complete(self.do_download())
