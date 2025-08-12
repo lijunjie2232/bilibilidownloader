@@ -52,8 +52,8 @@ from bilibilidownloader.utils import (
 
 _OUT_FMT = [
     "mp4",
-    "mkv",
-    "flv",
+    # "mkv",
+    # "flv",
 ]
 
 
@@ -557,6 +557,7 @@ class VideoAnalyzer(QThread):
                     "aid": _aid,
                     "bid": _bvid,
                     "cid": video["cid"],
+                    "alid": idx,
                     "name": video["part"],
                     "video_name": video_name,
                     "page": video["page"],
@@ -564,7 +565,7 @@ class VideoAnalyzer(QThread):
                     "pic_url": video["first_frame"],
                     "duration": video["duration"],
                 }
-                for video in videos
+                for idx, video in enumerate(videos, 1)
             ]
             self._inited = True
             self._videos_occurred.emit(self, task_list)
@@ -606,6 +607,7 @@ class AnalyzeTask(
         aid,
         bid,
         cid,
+        alid,
         name,
         video_name,
         page,
@@ -622,6 +624,7 @@ class AnalyzeTask(
         self._aid = aid
         self._bid = bid
         self._cid = cid
+        self._alid = alid
         self._title = name
         self._vname = video_name
         self._id = page
@@ -671,6 +674,10 @@ class AnalyzeTask(
     @property
     def id(self):
         return self._id
+    
+    @property
+    def alid(self):
+        return self._alid
 
     @property
     def total(self):
