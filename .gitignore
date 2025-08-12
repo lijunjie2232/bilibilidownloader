@@ -209,3 +209,5 @@ __marimo__/
 
 *.drawio
 *.drawio.bkp
+bilibilidownloader/muxer/
+*.mp4
