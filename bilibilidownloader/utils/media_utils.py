@@ -1,6 +1,7 @@
+from pathlib import Path
+
 import avmerger
 from loguru import logger
-from pathlib import Path
 
 _QN_240P = 6
 _QN_360P = 16
@@ -67,7 +68,7 @@ def m4s_merger(video_path, audio_path, output_path):
         audio_path = audio_path.absolute().as_posix()
     if isinstance(output_path, Path):
         output_path = output_path.absolute().as_posix()
-    
+
     merger = avmerger.AudioVideoMerger()
     success = merger.merge(video_path, audio_path, output_path)
 

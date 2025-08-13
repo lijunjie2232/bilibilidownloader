@@ -222,7 +222,11 @@ def get_link(
         _left, _char, right = resp_head["content-range"].rpartition("/")
 
         continual_download = True
-        if right and right != "*" and int(right) == int(resp_head["content-length"]) + start:
+        if (
+            right
+            and right != "*"
+            and int(right) == int(resp_head["content-length"]) + start
+        ):
             total_size = int(right)
             content_size = int(resp_head["content-length"])
             logger.info(
@@ -243,7 +247,15 @@ def get_link(
         logger.info("文件不支持续传")
 
     response.close()
-    return (url, fileName, total_size, content_size, continual_download, resp_head, headers)
+    return (
+        url,
+        fileName,
+        total_size,
+        content_size,
+        continual_download,
+        resp_head,
+        headers,
+    )
 
 
 def bringWindowToTop(window):

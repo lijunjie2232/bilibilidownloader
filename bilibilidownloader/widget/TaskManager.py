@@ -1,10 +1,10 @@
 import asyncio
 import time
 from functools import partial
-from typing import List
-from loguru import logger
 from traceback import print_stack
+from typing import List
 
+from loguru import logger
 from PySide6.QtCore import QMutexLocker, QObject, QRecursiveMutex, QThread, Signal
 
 from bilibilidownloader.utils import connect_component
@@ -300,7 +300,7 @@ class TaskManager(QObject):
             if new_status == TaskState.CANCELED:
                 self._cancel_task_occurred.emit(task)
                 self._take_task(task)
-            
+
             if new_status == TaskState.FINISHED:
                 self._task_finished_occurred.emit()
 

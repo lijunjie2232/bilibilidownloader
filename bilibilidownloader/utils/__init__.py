@@ -4,13 +4,13 @@ from .utils import (
     connect_component,
     copy_session,
     load_image_to_label,
+    sanitize_filename,
     sec_to_str,
     set_menu,
     thread,
     ui_wired,
     url_check,
     url_equal,
-    sanitize_filename,
 )
 
 __all__ = [
