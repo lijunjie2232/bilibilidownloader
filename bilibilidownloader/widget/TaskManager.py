@@ -1,19 +1,15 @@
 import asyncio
-from typing import List
-from functools import partial
 import time
+from functools import partial
+from typing import List
+from loguru import logger
+from traceback import print_stack
 
-from PySide6.QtCore import (
-    QMutexLocker,
-    QObject,
-    QRecursiveMutex,
-    Signal,
-    QThread,
-)
+from PySide6.QtCore import QMutexLocker, QObject, QRecursiveMutex, QThread, Signal
 
 from bilibilidownloader.utils import connect_component
 
-from .DownloadWidget import TaskState, TaskOp, DownloadTaskWidget
+from .DownloadWidget import DownloadTaskWidget, TaskOp, TaskState
 
 
 class AsyncTaskQueue(QObject):
@@ -131,6 +127,7 @@ class AsyncTaskQueue(QObject):
 
 class TaskManager(QObject):
     _cancel_task_occurred = Signal(DownloadTaskWidget)
+    _task_finished_occurred = Signal()
 
     def __init__(self, max_concurrent=3):
         super().__init__()
@@ -205,7 +202,7 @@ class TaskManager(QObject):
                 self._is_running = True
                 self._task_manager_task = asyncio.run_coroutine_threadsafe(
                     self._manage_tasks(), self._event_loop
-            )
+                )
 
     def stop_manager(self):
         """
@@ -230,10 +227,7 @@ class TaskManager(QObject):
                             if task_widget:
                                 assert task_widget.status == TaskState.PENDING
                                 # Set task status to RUNNING
-                                task_widget.set_status(
-                                    TaskState.RUNNING,
-                                    emit=False
-                                )
+                                task_widget.set_status(TaskState.RUNNING, emit=False)
                                 self._pending.push(task_widget)
                                 # Start the actual download task
                                 task_widget.task.start()
@@ -306,6 +300,13 @@ class TaskManager(QObject):
             if new_status == TaskState.CANCELED:
                 self._cancel_task_occurred.emit(task)
                 self._take_task(task)
+            
+            if new_status == TaskState.FINISHED:
+                self._task_finished_occurred.emit()
+
+            logger.debug(
+                f"Task {task.id} status changed to {new_status} from {original_status}"
+            )
 
     def _take_task(self, task: DownloadTaskWidget):
         """
@@ -359,7 +360,10 @@ class TaskManagerThread(QThread):
         while self.task_manager._is_running:
             try:
                 # Move tasks from pending to running as space becomes available
-                if not self.task_manager.running.is_full and not self.task_manager.pending.is_empty:
+                if (
+                    not self.task_manager.running.is_full
+                    and not self.task_manager.pending.is_empty
+                ):
                     with QMutexLocker(self.task_manager._manager_lock):
                         while not (
                             self.task_manager.running.is_full
