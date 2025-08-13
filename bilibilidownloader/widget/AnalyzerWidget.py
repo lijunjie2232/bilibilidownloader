@@ -1,5 +1,6 @@
 from functools import partial
 from pathlib import Path
+from time import sleep
 from traceback import print_exc
 
 from bilibilicore.api import DashStream, Season, Stream, Video
@@ -796,6 +797,7 @@ class AnalyzeTask(
             self.init_detail()
             with QMutexLocker(self.fetch_mutex):
                 self.fetching = False
+            sleep(1)
         except Exception as e:
             print_exc()
             raise e
