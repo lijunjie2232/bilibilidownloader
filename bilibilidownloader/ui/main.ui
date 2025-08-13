@@ -267,7 +267,7 @@ QListWidget::item:selected {
   </action>
   <action name="setting_op">
    <property name="text">
-    <string>option</string>
+    <string>settings</string>
    </property>
   </action>
  </widget>
