@@ -1,4 +1,5 @@
 import math
+from copy import deepcopy
 from pathlib import Path
 from shutil import move, rmtree
 from traceback import print_exc, print_stack
@@ -34,11 +35,10 @@ from bilibilidownloader.utils import (
     copy_session,
     get_link,
     load_image_to_label,
-    thread,
     m4s_merger,
     sanitize_filename,
+    thread,
 )
-from copy import deepcopy
 
 from .AnalyzerWidget import AnalyzeTask
 
@@ -46,8 +46,6 @@ _CHUNK_SIZE = 1024 * 64
 _ICON_SIZE = QSize(16, 16)
 
 from enum import Enum, unique
-
-
 
 
 @unique
@@ -177,11 +175,12 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             self.resume,
         )
 
-        connect_component(
-            self.debug_btn,
-            "clicked",
-            self.debug_handler,
-        )
+        # connect_component(
+        #     self.debug_btn,
+        #     "clicked",
+        #     self.debug_handler,
+        # )
+        self.debug_btn.setVisible(False)
 
         # 设置缩略图
         if self._analyze_task.img or self._analyze_task.pic_url:
@@ -255,7 +254,8 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
 
     @property
     def status(self):
-        return self._status
+        with QMutexLocker(self._status_mutex):
+            return self._status
 
     @property
     def status_mutex(self):
@@ -388,6 +388,7 @@ class DownloadTask(QThread):
             allow_redirects=True,
             impersonate="chrome",
             http_version="v3",
+            loop=self._loop,
         )
 
     @property
@@ -562,6 +563,7 @@ class DownloadTask(QThread):
             self._download_task = asyncio.create_task(self.async_download())
             await self._download_task
         except Exception as e:
+            logger.error(e)
             print_exc()
         finally:
             self._download_task = None
@@ -581,22 +583,22 @@ class DownloadTask(QThread):
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
             self._loop.close()
 
-    def run(self):
+    def run(self, loop=None):
         if self.is_running:
             return
-        if self._loop is None:
-            self._loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self._loop)
-            self._init_download()
+        self._loop = loop or asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        self._init_download()
 
         try:
             self._loop.run_until_complete(self.do_download())
         except asyncio.CancelledError as e:
-            print(e)
+            logger.warning(e)
             self._task_error_occurred.emit(e)
         finally:
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
             self._loop.close()
+            self._loop = None
 
     def pause(self):
         try:
@@ -626,6 +628,5 @@ class DownloadTask(QThread):
                 return False
             else:
                 return self._loop.is_closed()
-        except RuntimeError:
-            print("No loop running")
+        except Exception:
             return False
