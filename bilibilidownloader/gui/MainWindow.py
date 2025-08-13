@@ -1,11 +1,19 @@
 import sys
 from io import BytesIO
 from time import sleep
-
+from loguru import logger
 import qrcode
 from bilibilicore.api import Passport, User
 from bilibilicore.config import Config
-from PySide6.QtCore import QFile, QIODevice, QSize, Qt, QTimer
+from PySide6.QtCore import (
+    QFile,
+    QIODevice,
+    QSize,
+    Qt,
+    QTimer,
+    QMutexLocker,
+    QMutex,
+)
 from PySide6.QtGui import QAction, QImage, QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
@@ -55,12 +63,19 @@ class MainWindow(
 
         self.analyze_type = "video"
         self._task_manager = TaskManager(Config().download.parallel)
-        self._task_count = 0
+        connect_component(
+            self._task_manager,
+            "_task_finished_occurred",
+            self.update_download_progress,
+        )
+        self._finished = 0
 
         self.link_type_selector_init(self.link_type_selector)
 
         self.analyzer = None
         self.statusbar_count_label = QLabel()
+
+        self.status_mutex = QMutex()
 
         self.user = None
         self.user_init()
@@ -84,6 +99,18 @@ class MainWindow(
         self.statusbar.addPermanentWidget(icon_label)
         self.statusbar_count_label.setText("done: 0 / total: 0")
         self.statusbar.addPermanentWidget(self.statusbar_count_label)
+
+    def update_download_progress(
+        self,
+    ):
+        with QMutexLocker(self.status_mutex):
+            self._finished += 1
+            logger.info(
+                f"done: {self._finished} / total: {self.download_list.count()}"
+            )
+            self.statusbar_count_label.setText(
+                f"done: {self._finished} / total: {self.download_list.count()}"
+            )
 
     def login_op_triggered(self):
         if self.user is not None:
@@ -250,12 +277,11 @@ class MainWindow(
         )
         result = self._task_manager.add_task(task)
         if result:
-            self._task_count += result
             self.add_task(task)
         else:
             del task
 
-    def cancel_task_handler(self, task:DownloadTaskWidget):
+    def cancel_task_handler(self, task: DownloadTaskWidget):
         task_widget = self.download_list.item(task.id)
         if task_widget and task_widget.status == TaskState.CANCELED:
             # 移除该项
