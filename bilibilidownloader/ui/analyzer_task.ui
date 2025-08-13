@@ -35,7 +35,7 @@
     <bool>true</bool>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="id_label">
@@ -54,7 +54,7 @@
     <string>1000</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="audio_text">
@@ -73,7 +73,7 @@
     <string>音质：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QToolButton" name="audio_select">
@@ -92,7 +92,7 @@
     <string>loading ...</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QLabel" name="video_text">
@@ -111,7 +111,7 @@
     <string>画质：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QToolButton" name="video_select">
@@ -130,7 +130,7 @@
     <string>loading ...</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QCheckBox" name="select_check">
@@ -146,7 +146,7 @@
     </rect>
    </property>
    <property name="layoutDirection">
-    <enum>Qt::LeftToRight</enum>
+    <enum>Qt::LayoutDirection::LeftToRight</enum>
    </property>
    <property name="styleSheet">
     <string notr="true">QCheckBox::indicator{
@@ -236,7 +236,7 @@ background-color: #bbdefb;
     <string>格式：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QToolButton" name="fmt_select">
@@ -255,7 +255,7 @@ background-color: #bbdefb;
     <string>loading ...</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QProgressBar" name="progress_bar">
@@ -311,7 +311,7 @@ QProgressBar::chunk {
     <string>时长：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="time_label">
@@ -330,7 +330,7 @@ QProgressBar::chunk {
     <string>1:10:51</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="error_label">
@@ -352,7 +352,7 @@ QProgressBar::chunk {
     </font>
    </property>
    <property name="layoutDirection">
-    <enum>Qt::LeftToRight</enum>
+    <enum>Qt::LayoutDirection::LeftToRight</enum>
    </property>
    <property name="styleSheet">
     <string notr="true">QLabel{
