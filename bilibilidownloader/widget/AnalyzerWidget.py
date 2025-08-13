@@ -394,7 +394,7 @@ class AnalyzerWidget(QDialog, Ui_Analyzer):
             self.refresh_select_btns()
 
     def check_action_occurred_handler(self, checked):
-        print(checked)
+        # print(checked)
         self.update_current_select_count(1 if checked else -1)
         self.update_total_select_count(1 if checked else -1)
 
@@ -674,7 +674,7 @@ class AnalyzeTask(
     @property
     def id(self):
         return self._id
-    
+
     @property
     def alid(self):
         return self._alid
@@ -769,7 +769,7 @@ class AnalyzeTask(
             )
 
     def handle_menu(self, *args):
-        print(f"handle_menu: {QThread.currentThread()}")
+        # print(f"handle_menu: {QThread.currentThread()}")
         set_menu(*args)
 
     @property
@@ -780,11 +780,11 @@ class AnalyzeTask(
     def audios(self):
         return self._audios
 
-    # @thread
+    @thread
     def fetch(self):
-        if self.fetching:
-            return
         try:
+            if self.fetching:
+                return
             if self.fetching:
                 return
             with QMutexLocker(self.fetch_mutex):
@@ -792,7 +792,7 @@ class AnalyzeTask(
                     return
                 self.fetching = True
                 # self.init_components()
-            print(f"fetch: {QThread.currentThread()}")
+            # print(f"fetch: {QThread.currentThread()}")
             self.init_detail()
             with QMutexLocker(self.fetch_mutex):
                 self.fetching = False
@@ -832,7 +832,7 @@ class AnalyzeTask(
             self.inited = True
 
     def init_detail(self):
-        print(f"init_detail: {QThread.currentThread()}")
+        # print(f"init_detail: {QThread.currentThread()}")
         self.error_label.setVisible(False)
         self.progress_bar.setMaximum(0)
         self.progress_bar.setVisible(True)
