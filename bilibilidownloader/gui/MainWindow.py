@@ -1,19 +1,12 @@
 import sys
 from io import BytesIO
 from time import sleep
-from loguru import logger
+
 import qrcode
 from bilibilicore.api import Passport, User
 from bilibilicore.config import Config
-from PySide6.QtCore import (
-    QFile,
-    QIODevice,
-    QSize,
-    Qt,
-    QTimer,
-    QMutexLocker,
-    QMutex,
-)
+from loguru import logger
+from PySide6.QtCore import QFile, QIODevice, QMutex, QMutexLocker, QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QImage, QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
@@ -105,9 +98,7 @@ class MainWindow(
     ):
         with QMutexLocker(self.status_mutex):
             self._finished += 1
-            logger.info(
-                f"done: {self._finished} / total: {self.download_list.count()}"
-            )
+            logger.info(f"done: {self._finished} / total: {self.download_list.count()}")
             self.statusbar_count_label.setText(
                 f"done: {self._finished} / total: {self.download_list.count()}"
             )
