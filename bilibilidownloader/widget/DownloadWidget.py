@@ -377,8 +377,16 @@ class DownloadTask(QThread):
 
         # net component
         self.client = None
-
+    
+    def task_refetch(self):
+        logger.info(f"do task info refetch, task: {self._task}")
+        self._task.init_detail()
+        self._task.vq_apply()
+        self._task.aq_apply()
+        self._video: DashStream = self._task.selected_video
+        self._audio: DashStream = self._task.selected_audio
     def _init_download(self):
+        
         self.client = curl_cffi.AsyncSession(
             headers=dict(self.session.headers),
             cookies=dict(self.session.cookies),
@@ -420,7 +428,10 @@ class DownloadTask(QThread):
         output_path = final_file_path.parent / f"{final_file_path.name}.tmp"
         url_list = [url]
         if backup_url:
-            url_list.append(backup_url)
+            if isinstance(backup_url, str):  # pragma: no cover
+                backup_url = [backup_url]
+            elif isinstance(backup_url, list):  # pragma: no cover
+                backup_url = url_list.extend(backup_url)
 
         for attempt, current_url in enumerate(url_list, start=1):
 
@@ -512,6 +523,7 @@ class DownloadTask(QThread):
                 output_path=tmp_video_path,
                 desc="video",
             )
+            logger.debug(result)
             assert result is True, result
             # self._task_info_occurred.emit("下载视频失败或取消", repr(result))
 
@@ -558,15 +570,18 @@ class DownloadTask(QThread):
             self._task_info_occurred.emit("下载失败", repr(e))
             self._task_result_occurred.emit(False)
 
-    async def do_download(self):
-        try:
-            self._download_task = asyncio.create_task(self.async_download())
-            await self._download_task
-        except Exception as e:
-            logger.error(e)
-            print_exc()
-        finally:
-            self._download_task = None
+    async def do_download(self, retry=3):
+        while retry:
+            retry -= 1
+            try:
+                self._download_task = asyncio.create_task(self.async_download())
+                await self._download_task
+            except Exception as e:
+                self.task_refetch()
+                logger.error(e)
+                print_exc()
+            finally:
+                self._download_task = None
 
     def stop(self):
         try:
@@ -609,6 +624,7 @@ class DownloadTask(QThread):
 
     def resume(self):
         try:
+            self.task_refetch()
             self.run()
         except Exception as e:
             print_exc()
