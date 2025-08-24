@@ -377,7 +377,7 @@ class DownloadTask(QThread):
 
         # net component
         self.client = None
-    
+
     def task_refetch(self):
         logger.info(f"do task info refetch, task: {self._task}")
         self._task.init_detail()
@@ -385,8 +385,9 @@ class DownloadTask(QThread):
         self._task.aq_apply()
         self._video: DashStream = self._task.selected_video
         self._audio: DashStream = self._task.selected_audio
+
     def _init_download(self):
-        
+
         self.client = curl_cffi.AsyncSession(
             headers=dict(self.session.headers),
             cookies=dict(self.session.cookies),
