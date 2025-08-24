@@ -720,9 +720,9 @@ class AnalyzeTask(
     def pic_url(self):
         return self._pic_url
 
-    def vq_apply(self, vq_filter, codec_filter):
-        self._vq_filter = vq_filter
-        self._codec_filter = codec_filter
+    def vq_apply(self, vq_filter=None, codec_filter=None):
+        self._vq_filter = vq_filter or self._vq_filter
+        self._codec_filter = codec_filter or self._codec_filter
         vq_videos = list(
             filter(
                 self._vq_filter,
@@ -750,8 +750,8 @@ class AnalyzeTask(
                 f'{self.video[0]["quality"]}/{self.videos[0]["codec"]}',
             )
 
-    def aq_apply(self, _filter):
-        self._aq_filter = _filter
+    def aq_apply(self, _filter=None):
+        self._aq_filter = _filter or self._aq_filter
         aq_videos = list(
             filter(
                 self._aq_filter,
