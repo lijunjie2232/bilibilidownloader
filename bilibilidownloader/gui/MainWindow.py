@@ -37,9 +37,9 @@ from bilibilidownloader.widget import (
     DownloadTask,
     DownloadTaskWidget,
     LoginDialog,
+    SettingDialog,
     TaskManager,
     TaskState,
-    SettingDialog,
 )
 
 # from bilibilidownloader.utils import ui_wired
@@ -133,9 +133,9 @@ class MainWindow(
     def _handle_qr_login_finished(self, succeed):
         if succeed:
             self.user_init()
-    
+
     def setting_op_triggered(self):
-    
+
         # Create and show settings dialog
         settings_dialog = SettingDialog(self)
         settings_dialog.show()
