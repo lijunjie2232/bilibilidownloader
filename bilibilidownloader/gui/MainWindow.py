@@ -39,6 +39,7 @@ from bilibilidownloader.widget import (
     LoginDialog,
     TaskManager,
     TaskState,
+    SettingDialog,
 )
 
 # from bilibilidownloader.utils import ui_wired
@@ -60,6 +61,11 @@ class MainWindow(
             self._task_manager,
             "_task_finished_occurred",
             self.update_download_progress,
+        )
+        connect_component(
+            self.setting_op,
+            "triggered",
+            self.setting_op_triggered,
         )
         self._finished = 0
 
@@ -127,6 +133,12 @@ class MainWindow(
     def _handle_qr_login_finished(self, succeed):
         if succeed:
             self.user_init()
+    
+    def setting_op_triggered(self):
+    
+        # Create and show settings dialog
+        settings_dialog = SettingDialog(self)
+        settings_dialog.show()
 
     def user_init(self):
         user = User()
