@@ -184,7 +184,7 @@ def get_link(
     start: int = 0,
     cookies: dict = {},
     fileName: str = "download",
-    verify: bool = cfg.ssl_verify.enable,
+    verify: bool = cfg.network.ssl_verify,
     proxy: str = "",
     followRedirects: bool = True,
 ) -> tuple:
