@@ -1,6 +1,7 @@
 from .AnalyzerWidget import AnalyzerWidget, DownloadCommit
 from .DownloadWidget import DownloadTask, DownloadTaskWidget, TaskState
 from .LoginDialog import LoginDialog
+from .SettingDialog import SettingDialog
 from .TaskManager import TaskManager
 
 __all___ = [
@@ -11,4 +12,5 @@ __all___ = [
     "AnalyzerWidget",
     "DownloadCommit",
     "LoginDialog",
+    "SettingDialog",
 ]
