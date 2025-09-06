@@ -100,7 +100,7 @@ class AnalyzerWidget(QDialog, Ui_Analyzer):
         self._vq_filter = lambda _: True
         self._aq_filter = lambda _: True
         self._codec_filter = lambda _: True
-        self._out_path = Config().download.default_path
+        self._out_path = Config().download.path
         if self._out_path:
             self.path_line.setText(self._out_path)
         self._current_checked = 0
