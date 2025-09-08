@@ -391,7 +391,7 @@ class DownloadTask(QThread):
         self.client = curl_cffi.AsyncSession(
             headers=dict(self.session.headers),
             cookies=dict(self.session.cookies),
-            verify=Config().ssl_verify.enable,
+            verify=Config().network.ssl_verify,
             max_clients=256,
             trust_env=False,
             allow_redirects=True,
