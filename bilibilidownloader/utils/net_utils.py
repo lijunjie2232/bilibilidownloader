@@ -90,12 +90,12 @@ def getSystemProxy():
 
 
 def getProxy():
-    if not cfg.proxy.enable:
+    if not cfg.network.use_proxy:
         return None
-    elif cfg.proxy.custom.enable:
+    elif cfg.network.sys_proxy:
         return getSystemProxy()
     else:
-        return f"{cfg.proxy.type}:///{cfg.proxy.host}:{cfg.proxy.port}"
+        return f"{cfg.network.proxy_url}"
 
 
 def getReadableSize(size):
