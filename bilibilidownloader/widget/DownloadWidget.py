@@ -482,7 +482,7 @@ class DownloadTask(QThread):
 
             except Exception as e:
                 print_exc()
-                if attempt == 1 and backup_url:
+                if attempt < len(url_list):
                     continue  # 尝试备用链接
                 else:
                     logger.warning(f"无法下载 {desc}：{e}", level="error")
@@ -564,19 +564,21 @@ class DownloadTask(QThread):
             self._task_result_occurred.emit(True)
             self._progress_bar_update_occured.emit(1, 1)
             self._task_info_occurred.emit("下载完成", "")
+            return True
         except Exception as e:
             print_exc()
             print_stack()
             self._task_error_occurred.emit(e)
             self._task_info_occurred.emit("下载失败", repr(e))
             self._task_result_occurred.emit(False)
+            return False
 
     async def do_download(self, retry=3):
         while retry:
             retry -= 1
             try:
                 self._download_task = asyncio.create_task(self.async_download())
-                await self._download_task
+                assert await self._download_task
             except Exception as e:
                 self.task_refetch()
                 logger.error(e)
