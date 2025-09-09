@@ -578,7 +578,8 @@ class DownloadTask(QThread):
             retry -= 1
             try:
                 self._download_task = asyncio.create_task(self.async_download())
-                assert await self._download_task
+                await self._download_task
+                assert self._download_task.result()
             except Exception as e:
                 self.task_refetch()
                 logger.error(e)
