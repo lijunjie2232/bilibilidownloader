@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 
 from bilibilidownloader.ui import __MODULE_PATH__, Ui_Analyzer, Ui_AnalyzerTask
 from bilibilidownloader.utils import (
+    concurrent,
     connect_component,
     get_aq,
     get_codec,
@@ -49,7 +50,6 @@ from bilibilidownloader.utils import (
     thread,
     url_check,
     url_equal,
-    concurrent,
 )
 
 _OUT_FMT = [

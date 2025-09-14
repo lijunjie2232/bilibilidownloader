@@ -13,13 +13,13 @@ from PySide6.QtConcurrent import QtConcurrent
 from PySide6.QtCore import (
     QMutex,
     QMutexLocker,
+    QRunnable,
     Qt,
     QThread,
+    QThreadPool,
     QUrl,
     QWaitCondition,
     Signal,
-    QRunnable,
-    QThreadPool,
 )
 from PySide6.QtGui import QAction, QImage, QPixmap
 from PySide6.QtWidgets import QFileDialog, QLabel, QMenu

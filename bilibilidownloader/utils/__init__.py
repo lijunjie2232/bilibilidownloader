@@ -1,3 +1,4 @@
+from .async_utils import concurrent
 from .media_utils import get_aq, get_codec, get_vq, m4s_merger
 from .net_utils import get_link, getProxy, getReadableSize
 from .utils import (
@@ -12,7 +13,6 @@ from .utils import (
     url_check,
     url_equal,
 )
-from .async_utils import concurrent
 
 __all__ = [
     "get_aq",

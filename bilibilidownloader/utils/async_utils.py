@@ -1,20 +1,19 @@
 import asyncio
 import functools
-from typing import Dict, Any, Callable
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from typing import Any, Callable, Dict
+
+from loguru import logger
 from PySide6.QtCore import (
     QMutex,
     QMutexLocker,
-    QThreadPool,
-    QRunnable,
     QObject,
+    QRunnable,
+    QThreadPool,
+    QTimer,
     Signal,
     Slot,
 )
-from PySide6.QtCore import QTimer
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-
-from loguru import logger
-
 
 __POOL_MANAGER_NEW_MUTEX__ = QMutex()
 
