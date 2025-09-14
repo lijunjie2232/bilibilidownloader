@@ -298,7 +298,7 @@ def concurrent(pool_name: str):
                 if isinstance(
                     pool, (QThreadPool, ThreadPoolExecutor, ProcessPoolExecutor)
                 ):
-                    logger.debug(f"Executing '{func.__name__}' with supported pool type")
+                    logger.debug(f"Executing '{func.__name__}' with supported pool type {type(pool).__name__}")
                     result = func(*args, **kwargs)
                     logger.debug(f"Execution completed for '{func.__name__}' with supported pool")
                     return result
