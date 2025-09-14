@@ -781,15 +781,13 @@ class AnalyzeTask(
     def audios(self):
         return self._audios
 
-    @thread
+    # @thread
     def fetch(self):
         try:
-            if self.fetching:
-                return
-            if self.fetching:
+            if self.fetching or self.info_fetched:
                 return
             with QMutexLocker(self.fetch_mutex):
-                if self.fetching:
+                if self.fetching or self.info_fetched:
                     return
                 self.fetching = True
                 # self.init_components()
