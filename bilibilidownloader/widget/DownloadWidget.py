@@ -513,7 +513,7 @@ class DownloadTask(QThread):
                 self._task_result_occurred.emit(True)
                 self._progress_bar_update_occured.emit(1, 1)
                 self._task_info_occurred.emit("下载完成", "")
-                return
+                return True
             tmp_out_path = self._save_dir / f"{out_path.stem}_tmp{out_path.suffix}"
 
             self._task_info_occurred.emit("正在下载视频", "")
@@ -564,7 +564,7 @@ class DownloadTask(QThread):
             self._task_result_occurred.emit(True)
             self._progress_bar_update_occured.emit(1, 1)
             self._task_info_occurred.emit("下载完成", "")
-            return True
+            return result
         except Exception as e:
             print_exc()
             print_stack()
@@ -577,9 +577,9 @@ class DownloadTask(QThread):
         while retry:
             retry -= 1
             try:
-                self._download_task = asyncio.create_task(self.async_download())
-                await self._download_task
-                assert self._download_task.result()
+                result = await self.async_download()
+                logger.debug(result)
+                assert result
             except Exception as e:
                 self.task_refetch()
                 logger.error(e)
