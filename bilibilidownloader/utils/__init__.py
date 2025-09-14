@@ -12,6 +12,7 @@ from .utils import (
     url_check,
     url_equal,
 )
+from .async_utils import concurrent
 
 __all__ = [
     "get_aq",
@@ -31,4 +32,5 @@ __all__ = [
     "getReadableSize",
     "get_link",
     "sanitize_filename",
+    "concurrent",
 ]
