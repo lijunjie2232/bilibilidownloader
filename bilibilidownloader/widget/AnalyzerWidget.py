@@ -49,6 +49,7 @@ from bilibilidownloader.utils import (
     thread,
     url_check,
     url_equal,
+    concurrent,
 )
 
 _OUT_FMT = [
@@ -782,6 +783,7 @@ class AnalyzeTask(
         return self._audios
 
     # @thread
+    @concurrent("task_fetch")
     def fetch(self):
         try:
             if self.fetching or self.info_fetched:
@@ -795,7 +797,7 @@ class AnalyzeTask(
             self.init_detail()
             with QMutexLocker(self.fetch_mutex):
                 self.fetching = False
-            sleep(1)
+            sleep(0.5)
         except Exception as e:
             print_exc()
             raise e
