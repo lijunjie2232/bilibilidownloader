@@ -18,9 +18,13 @@ from PySide6.QtCore import (
     QUrl,
     QWaitCondition,
     Signal,
+    QRunnable,
+    QThreadPool,
 )
 from PySide6.QtGui import QAction, QImage, QPixmap
 from PySide6.QtWidgets import QFileDialog, QLabel, QMenu
+
+# QThreadPool.globalInstance().setMaxThreadCount(3)
 
 
 def normalize_url(url):
@@ -61,10 +65,6 @@ def url_check(url):
 #         my_thread.start()
 #         return my_thread
 #     return wrapper
-
-from PySide6.QtCore import QRunnable, QThreadPool
-
-QThreadPool.globalInstance().setMaxThreadCount(3)
 
 
 def thread(my_func):
