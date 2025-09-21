@@ -7,6 +7,8 @@ from typing import List
 from loguru import logger
 from PySide6.QtCore import QMutexLocker, QObject, QRecursiveMutex, QThread, Signal
 
+from bilibilicore.config import Config
+
 from bilibilidownloader.utils import connect_component
 
 from .DownloadWidget import DownloadTaskWidget, TaskOp, TaskState
@@ -39,6 +41,13 @@ class AsyncTaskQueue(QObject):
     @property
     def is_empty(self):
         return len(self._tasks) == 0
+    
+    @property
+    def size(self):
+        return len(self._tasks)
+    
+    def full_at(self, length):
+        return len(self._tasks) >= length
 
     @property
     def tasks(self):
@@ -129,11 +138,11 @@ class TaskManager(QObject):
     _cancel_task_occurred = Signal(DownloadTaskWidget)
     _task_finished_occurred = Signal()
 
-    def __init__(self, max_concurrent=3):
+    def __init__(self):
         super().__init__()
         self._paused = AsyncTaskQueue()
         self._pending = AsyncTaskQueue()
-        self._running = AsyncTaskQueue(max_size=max_concurrent)
+        self._running = AsyncTaskQueue()
         self._finished = AsyncTaskQueue()
         self._canceled = AsyncTaskQueue(sorted=True)
         self._failed = AsyncTaskQueue()
@@ -146,7 +155,7 @@ class TaskManager(QObject):
             self._paused,
         ]
         self._max_task = max
-        self._max_concurrent = max_concurrent
+        # self._max_concurrent = max_concurrent
         self._event_loop = None
         self._task_manager_task = None
         self._is_running = False
@@ -220,9 +229,9 @@ class TaskManager(QObject):
         while self._is_running:
             try:
                 # Move tasks from pending to running as space becomes available
-                if not self._running.is_full and not self._pending.is_empty:
+                if not self._running.full_at(Config().download.parallel) and not self._pending.is_empty:
                     with QMutexLocker(self._manager_lock):
-                        while not self._running.is_full and not self._pending.is_empty:
+                        while not self._running.full_at(Config().download.parallel) and not self._pending.is_empty:
                             task_widget = self._pending.pop()
                             if task_widget:
                                 assert task_widget.status == TaskState.PENDING
