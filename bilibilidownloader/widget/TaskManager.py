@@ -370,12 +370,12 @@ class TaskManagerThread(QThread):
             try:
                 # Move tasks from pending to running as space becomes available
                 if (
-                    not self.task_manager.running.is_full
+                    not self.task_manager.running.full_at(Config().download.parallel)
                     and not self.task_manager.pending.is_empty
                 ):
                     with QMutexLocker(self.task_manager._manager_lock):
                         while not (
-                            self.task_manager.running.is_full
+                            self.task_manager.running.full_at(Config().download.parallel)
                             or self.task_manager.pending.is_empty
                         ):
                             task_widget = self.task_manager.pending.pop()
