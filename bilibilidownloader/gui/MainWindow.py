@@ -56,7 +56,7 @@ class MainWindow(
         self.setupUi(self)
 
         self.analyze_type = "video"
-        self._task_manager = TaskManager(Config().download.parallel)
+        self._task_manager = TaskManager()
         connect_component(
             self._task_manager,
             "_task_finished_occurred",
