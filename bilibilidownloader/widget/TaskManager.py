@@ -6,7 +6,14 @@ from typing import List
 
 from bilibilicore.config import Config
 from loguru import logger
-from PySide6.QtCore import QMutexLocker, QObject, QRecursiveMutex, QThread, Signal
+from PySide6.QtCore import (
+    QMutexLocker,
+    QObject,
+    QRecursiveMutex,
+    QThread,
+    Signal,
+    QMutex,
+)
 
 from bilibilidownloader.utils import connect_component
 
@@ -406,15 +413,30 @@ class TaskManagerThread(QThread):
 class TaskSpeedCounter(QThread):
 
     _update_bytes_list = []
-    _update_mutex = QRecursiveMutex()
+    _update_mutex = QMutex()
+    _speed_update_occurred = Signal(int)
 
-    def __init__(self, task_manager):
+    def __init__(self, task_manager: TaskManager):
         super().__init__()
         self.task_manager = task_manager
+        self.last_speed = 0
 
     def update_bytes(self, byte_count):
         with QMutexLocker(self._update_mutex):
             self._update_bytes_list.append(byte_count)
 
     def run(self):
-        pass
+        """
+        Run the task management loop
+        """
+        while self.task_manager._is_running:
+            try:
+                with QMutexLocker(self._update_mutex):
+                    self.last_speed = sum(self._update_bytes_list)
+                    self._update_bytes_list.clear()
+                self._speed_update_occurred.emit(self.last_speed)
+            except Exception as e:
+                print(f"Error in task management: {e}")
+            finally:
+                # Check for state changes
+                time.sleep(1)  # Small delay to prevent busy looping
