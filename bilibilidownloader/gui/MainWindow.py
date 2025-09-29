@@ -6,7 +6,16 @@ import qrcode
 from bilibilicore.api import Passport, User
 from bilibilicore.config import Config
 from loguru import logger
-from PySide6.QtCore import QFile, QIODevice, QMutex, QMutexLocker, QSize, Qt, QTimer
+from PySide6.QtCore import (
+    QFile,
+    QIODevice,
+    QMutex,
+    QMutexLocker,
+    QSize,
+    Qt,
+    QTimer,
+    Signal,
+)
 from PySide6.QtGui import QAction, QImage, QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
@@ -49,7 +58,6 @@ class MainWindow(
     QMainWindow,
     Ui_MainWindow,
 ):
-
     def __init__(self):
         super(MainWindow, self).__init__()
         # self = Ui_MainWindow()
@@ -101,9 +109,10 @@ class MainWindow(
 
     def update_download_progress(
         self,
+        update=1,
     ):
         with QMutexLocker(self.status_mutex):
-            self._finished += 1
+            self._finished += update
             logger.info(f"done: {self._finished} / total: {self.download_list.count()}")
             self.statusbar_count_label.setText(
                 f"done: {self._finished} / total: {self.download_list.count()}"
@@ -281,6 +290,7 @@ class MainWindow(
         result = self._task_manager.add_task(task)
         if result:
             self.add_task(task)
+            self.update_download_progress(0)
         else:
             del task
 
