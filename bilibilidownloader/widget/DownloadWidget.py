@@ -191,6 +191,10 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             )
         else:
             self.thumbnail_label.setText("No Image")
+    
+    @property
+    def bytes_update_occurred(self):
+        return self._download_task.bytes_update_occurred
 
     def filename_gen(self):
         width = math.ceil(math.log10(self._analyze_task.total))
@@ -345,6 +349,7 @@ class DownloadTask(QThread):
     _task_error_occurred = Signal(Exception)
 
     _progress_bar_update_occured = Signal(int, int)  # 用于更新进度条
+    _task_bytes_update_occurred = Signal(int)
 
     def __init__(
         self,
@@ -377,6 +382,10 @@ class DownloadTask(QThread):
 
         # net component
         self.client = None
+    
+    @property
+    def bytes_update_occurred(self):
+        return self._task_bytes_update_occurred
 
     def task_refetch(self):
         logger.info(f"do task info refetch, task: {self._task}")
@@ -476,6 +485,7 @@ class DownloadTask(QThread):
                                 downloaded_size,
                                 total_size,
                             )
+                            self._task_bytes_update_occurred.emit(chunk_size)
 
                 move(output_path, final_file_path)
                 return True  # 成功下载
