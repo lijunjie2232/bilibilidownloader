@@ -164,6 +164,7 @@ class TaskManager(QObject):
         # self._max_concurrent = max_concurrent
         self._event_loop = None
         self._task_manager_task = None
+        self._task_speed_counter = None
         self._is_running = False
         self._manager_lock = QRecursiveMutex()  # Add lock for TaskManager
         self._init_manager()
@@ -188,9 +189,11 @@ class TaskManager(QObject):
         """
         Initialize and start the task manager thread
         """
-        self._is_running = True
         self._task_manager_task = TaskManagerThread(self)
+        self._task_speed_counter = TaskSpeedCounter(self)
+        self._is_running = True
         self._task_manager_task.start()
+        self._task_speed_counter.start()
 
     def get_task_queue(self, task: DownloadTaskWidget):
         """
@@ -275,6 +278,11 @@ class TaskManager(QObject):
                 task,
                 "_op_occured",
                 partial(self._op_handler, task),
+            )
+            connect_component(
+                task,
+                "_bytes_update_occurred",
+                self._task_speed_counter,
             )
 
             # Add to pending queue if not already there
