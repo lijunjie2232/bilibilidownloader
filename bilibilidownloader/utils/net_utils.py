@@ -275,13 +275,14 @@ if __name__ == "__main__":
     )
 
 
-def bytes_2_str(size: int, readable: bool = True) -> str:
+def bytes_2_str(size: int, readable: bool = True, round: int = 2) -> str:
     """
     Convert bytes to human-readable string.
 
     Args:
         size: Size in bytes
         readable: If True, convert to KB, MB, GB, etc.
+        round: Decimal places to round to
 
     Returns:
         Human-readable size string
@@ -295,4 +296,4 @@ def bytes_2_str(size: int, readable: bool = True) -> str:
     while size >= K and unit_index < len(units) - 1:
         size = size / K
         unit_index += 1
-    return "%.2f %s" % (size, units[unit_index])
+    return (f"%.{round}f %s") % (size, units[unit_index])
