@@ -273,3 +273,26 @@ if __name__ == "__main__":
             start=357986,
         )
     )
+
+
+def bytes_2_str(size: int, readable: bool = True) -> str:
+    """
+    Convert bytes to human-readable string.
+
+    Args:
+        size: Size in bytes
+        readable: If True, convert to KB, MB, GB, etc.
+
+    Returns:
+        Human-readable size string
+    """
+    if not readable:
+        return f"{size} B"
+
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    unit_index = 0
+    K = 1024.0
+    while size >= K and unit_index < len(units) - 1:
+        size = size / K
+        unit_index += 1
+    return "%.2f %s" % (size, units[unit_index])

@@ -1,6 +1,11 @@
 from .async_utils import concurrent
 from .media_utils import get_aq, get_codec, get_vq, m4s_merger
-from .net_utils import get_link, getProxy, getReadableSize
+from .net_utils import (
+    get_link,
+    getProxy,
+    getReadableSize,
+    bytes_2_str,
+)
 from .utils import (
     connect_component,
     copy_session,
@@ -30,6 +35,7 @@ __all__ = [
     "copy_session",
     "getProxy",
     "getReadableSize",
+    "bytes_2_str",
     "get_link",
     "sanitize_filename",
     "concurrent",
