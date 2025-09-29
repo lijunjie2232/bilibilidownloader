@@ -4,10 +4,9 @@ from functools import partial
 from traceback import print_stack
 from typing import List
 
+from bilibilicore.config import Config
 from loguru import logger
 from PySide6.QtCore import QMutexLocker, QObject, QRecursiveMutex, QThread, Signal
-
-from bilibilicore.config import Config
 
 from bilibilidownloader.utils import connect_component
 
@@ -41,11 +40,11 @@ class AsyncTaskQueue(QObject):
     @property
     def is_empty(self):
         return len(self._tasks) == 0
-    
+
     @property
     def size(self):
         return len(self._tasks)
-    
+
     def full_at(self, length):
         return len(self._tasks) >= length
 
@@ -182,9 +181,9 @@ class TaskManager(QObject):
         """
         Initialize and start the task manager thread
         """
+        self._is_running = True
         self._task_manager_task = TaskManagerThread(self)
         self._task_manager_task.start()
-        self._is_running = True
 
     def get_task_queue(self, task: DownloadTaskWidget):
         """
@@ -229,9 +228,15 @@ class TaskManager(QObject):
         while self._is_running:
             try:
                 # Move tasks from pending to running as space becomes available
-                if not self._running.full_at(Config().download.parallel) and not self._pending.is_empty:
+                if (
+                    not self._running.full_at(Config().download.parallel)
+                    and not self._pending.is_empty
+                ):
                     with QMutexLocker(self._manager_lock):
-                        while not self._running.full_at(Config().download.parallel) and not self._pending.is_empty:
+                        while (
+                            not self._running.full_at(Config().download.parallel)
+                            and not self._pending.is_empty
+                        ):
                             task_widget = self._pending.pop()
                             if task_widget:
                                 assert task_widget.status == TaskState.PENDING
@@ -358,7 +363,7 @@ class TaskManager(QObject):
 
 
 class TaskManagerThread(QThread):
-    def __init__(self, task_manager):
+    def __init__(self, task_manager: TaskManager):
         super().__init__()
         self.task_manager = task_manager
 
@@ -375,7 +380,9 @@ class TaskManagerThread(QThread):
                 ):
                     with QMutexLocker(self.task_manager._manager_lock):
                         while not (
-                            self.task_manager.running.full_at(Config().download.parallel)
+                            self.task_manager.running.full_at(
+                                Config().download.parallel
+                            )
                             or self.task_manager.pending.is_empty
                         ):
                             task_widget = self.task_manager.pending.pop()
@@ -394,3 +401,20 @@ class TaskManagerThread(QThread):
             finally:
                 # Check for state changes
                 time.sleep(1)  # Small delay to prevent busy looping
+
+
+class TaskSpeedCounter(QThread):
+
+    _update_bytes_list = []
+    _update_mutex = QRecursiveMutex()
+
+    def __init__(self, task_manager):
+        super().__init__()
+        self.task_manager = task_manager
+
+    def update_bytes(self, byte_count):
+        with QMutexLocker(self._update_mutex):
+            self._update_bytes_list.append(byte_count)
+
+    def run(self):
+        pass
