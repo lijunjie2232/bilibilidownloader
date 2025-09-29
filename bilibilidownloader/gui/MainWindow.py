@@ -93,8 +93,68 @@ class MainWindow(
             self.login_op_triggered,
         )
         self.status_bar_init()
-        # self.components_init()
+        self.components_init()
         self.show()
+
+    def components_init(self):
+        """
+        Initialize components and connect signals
+        """
+        # Connect the three control buttons
+        connect_component(
+            self.cancle_all_btn,
+            "clicked",
+            self.cancel_all_tasks,
+        )
+        connect_component(
+            self.pause_all_btn,
+            "clicked",
+            self.pause_all_tasks,
+        )
+        connect_component(
+            self.resume_all_btn,
+            "clicked",
+            self.resume_all_tasks,
+        )
+
+    def cancel_all_tasks(self):
+        """
+        Cancel all tasks in the download list
+        """
+        for i in range(self.download_list.count()):
+            item = self.download_list.item(i)
+            task_widget = self.download_list.itemWidget(item)
+            if (
+                isinstance(task_widget, DownloadTaskWidget)
+                and task_widget.status != TaskState.CANCELED
+            ):
+                task_widget.cancel()
+
+    def pause_all_tasks(self):
+        """
+        Pause all running tasks
+        """
+        for i in range(self.download_list.count()):
+            item = self.download_list.item(i)
+            task_widget = self.download_list.itemWidget(item)
+            if (
+                isinstance(task_widget, DownloadTaskWidget)
+                and task_widget.status == TaskState.RUNNING
+            ):
+                task_widget.pause()
+
+    def resume_all_tasks(self):
+        """
+        Resume all paused tasks
+        """
+        for i in range(self.download_list.count()):
+            item = self.download_list.item(i)
+            task_widget = self.download_list.itemWidget(item)
+            if (
+                isinstance(task_widget, DownloadTaskWidget)
+                and task_widget.status == TaskState.PAUSED
+            ):
+                task_widget.resume()
 
     def status_bar_init(self):
         icon_label = QLabel()

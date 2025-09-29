@@ -285,6 +285,7 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             # self._op_occured.emit(TaskOp.RESUME)
             # # self._condition.wakeAll()
             # self._download_task.resume()
+            self._download_task.resume(refetch=False)
             self._op_occured.emit(TaskOp.RESUME)
 
     def pause(
@@ -295,6 +296,7 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             # self.pause_btn.setVisible(False)
             # self._op_occured.emit(TaskOp.PAUSE)
             # self._download_task.pause()
+            self._download_task.stop()
             self._op_occured.emit(TaskOp.PAUSE)
 
     def cancel(
@@ -303,6 +305,7 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
         with QMutexLocker(self._op_mutex):
             # self._op_occured.emit(TaskOp.CANCEL)
             # self._download_task.cancel()
+            self._download_task.stop()
             self._op_occured.emit(TaskOp.CANCEL)
 
     def update_progress(
@@ -636,9 +639,10 @@ class DownloadTask(QThread):
             print_exc()
             self._task_error_occurred.emit(e)
 
-    def resume(self):
+    def resume(self, refetch=True):
         try:
-            self.task_refetch()
+            if refetch:
+                self.task_refetch()
             self.run()
         except Exception as e:
             print_exc()
