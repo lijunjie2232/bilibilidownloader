@@ -281,8 +281,8 @@ class TaskManager(QObject):
             )
             connect_component(
                 task,
-                "_bytes_update_occurred",
-                self._task_speed_counter,
+                "bytes_update_occurred",
+                self._task_speed_counter.update_bytes,
             )
 
             # Add to pending queue if not already there
