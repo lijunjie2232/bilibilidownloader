@@ -170,6 +170,10 @@ class TaskManager(QObject):
         self._init_manager()
 
     @property
+    def task_speed_counter(self):
+        return self._task_speed_counter
+
+    @property
     def tasks(self):
         """
         Get all tasks in order

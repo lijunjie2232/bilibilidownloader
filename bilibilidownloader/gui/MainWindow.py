@@ -39,6 +39,7 @@ from bilibilidownloader.utils import (
     set_menu,
     thread,
     url_check,
+    bytes_2_str,
 )
 from bilibilidownloader.widget import (
     AnalyzerWidget,
@@ -92,6 +93,7 @@ class MainWindow(
             self.login_op_triggered,
         )
         self.status_bar_init()
+        # self.components_init()
         self.show()
 
     def status_bar_init(self):
@@ -106,6 +108,24 @@ class MainWindow(
         self.statusbar.addPermanentWidget(icon_label)
         self.statusbar_count_label.setText("done: 0 / total: 0")
         self.statusbar.addPermanentWidget(self.statusbar_count_label)
+
+        # Add network speed label
+        self.speed_label = QLabel("Speed: 0 B/s")
+        self.statusbar.addPermanentWidget(self.speed_label)
+
+        # Connect to task manager's speed counter
+        connect_component(
+            self._task_manager.task_speed_counter,
+            "_speed_update_occurred",
+            self.update_speed_display,
+        )
+
+    def update_speed_display(self, speed_bytes: int):
+        """
+        Update the network speed display in status bar
+        """
+
+        self.speed_label.setText(f"Speed: {bytes_2_str(speed_bytes)}")
 
     def update_download_progress(
         self,
