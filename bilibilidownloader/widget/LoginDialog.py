@@ -4,7 +4,7 @@ from time import sleep
 import qrcode
 from bilibilicore.api import Passport
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QImage, QPixmap
+from PySide6.QtGui import QCloseEvent, QImage, QPixmap, QIcon
 from PySide6.QtWidgets import QDialog, QLabel
 
 from bilibilidownloader.ui import Ui_LoginDialog
@@ -19,6 +19,12 @@ class LoginDialog(QDialog, Ui_LoginDialog):
     ):
         super(LoginDialog, self).__init__()
         self.setupUi(self)
+        self.setWindowIcon(
+            QIcon(
+                ":/icon/bilibilidownloader/ui/assert/qrcode.svg",
+            ),
+        )
+        
         self._passport = Passport()
         self._qrcode_url = None
         self._qrcode_key = None

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from bilibilicore.config import Config
 from loguru import logger
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QFileDialog
 
 from bilibilidownloader.ui import Ui_SettingDialog
@@ -17,6 +18,11 @@ class SettingDialog(QDialog, Ui_SettingDialog):
     ):
         super(SettingDialog, self).__init__(parent=parent)
         self.setupUi(self)
+        self.setWindowIcon(
+            QIcon(
+                ":/icon/bilibilidownloader/ui/assert/settings.svg",
+            ),
+        )
 
         self.setting = Config()
 

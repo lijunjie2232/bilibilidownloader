@@ -18,7 +18,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QAction, QImage, QPixmap
+from PySide6.QtGui import QAction, QIcon, QImage, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
@@ -90,6 +90,11 @@ class AnalyzerWidget(QDialog, Ui_Analyzer):
         # self.ui = Ui_Analyzer()
         # self.ui.setupUi(self)
         self.setupUi(self)
+        self.setWindowIcon(
+            QIcon(
+                ":/icon/bilibilidownloader/ui/assert/analyze.svg",
+            ),
+        )
 
         self._url = url
         self._btype = btype

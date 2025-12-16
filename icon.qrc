@@ -9,5 +9,9 @@
     <file>bilibilidownloader/ui/assert/pause.svg</file>
     <file>bilibilidownloader/ui/assert/cancel.svg</file>
     <file>bilibilidownloader/ui/assert/bilibili.svg</file>
+    <file>bilibilidownloader/ui/assert/error.svg</file>
+    <file>bilibilidownloader/ui/assert/alert.svg</file>
+    <file>bilibilidownloader/ui/assert/info.svg</file>
+    <file>bilibilidownloader/ui/assert/warning.svg</file>
   </qresource>
 </RCC>

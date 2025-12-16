@@ -16,7 +16,7 @@ from PySide6.QtCore import (
     QTimer,
     Signal,
 )
-from PySide6.QtGui import QAction, QImage, QPixmap, QIcon
+from PySide6.QtGui import QAction, QIcon, QImage, QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
@@ -268,12 +268,27 @@ class MainWindow(
 
         if level == "warning":
             msg_box.setIcon(QMessageBox.Icon.Warning)
+            msg_box.setWindowIcon(
+                QIcon(
+                    ":/icon/bilibilidownloader/ui/assert/warning.svg",
+                ),
+            )
             msg_box.setWindowTitle("Warning")
         elif level == "error":
             msg_box.setIcon(QMessageBox.Icon.Critical)
+            msg_box.setWindowIcon(
+                QIcon(
+                    ":/icon/bilibilidownloader/ui/assert/error.svg",
+                ),
+            )
             msg_box.setWindowTitle("Error")
         else:
             msg_box.setIcon(QMessageBox.Icon.Information)
+            msg_box.setWindowIcon(
+                QIcon(
+                    ":/icon/bilibilidownloader/ui/assert/info.svg",
+                ),
+            )
             msg_box.setWindowTitle("Info")
 
         msg_box.setText(message)
