@@ -16,7 +16,7 @@ from PySide6.QtCore import (
     QTimer,
     Signal,
 )
-from PySide6.QtGui import QAction, QImage, QPixmap
+from PySide6.QtGui import QAction, QImage, QPixmap, QIcon
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
@@ -34,12 +34,12 @@ from tqdm import tqdm
 
 from bilibilidownloader.ui import __MODULE_PATH__, Ui_MainWindow
 from bilibilidownloader.utils import (
+    bytes_2_str,
     connect_component,
     load_image_to_label,
     set_menu,
     thread,
     url_check,
-    bytes_2_str,
 )
 from bilibilidownloader.widget import (
     AnalyzerWidget,
@@ -63,6 +63,12 @@ class MainWindow(
         super(MainWindow, self).__init__()
         # self = Ui_MainWindow()
         self.setupUi(self)
+
+        self.setWindowIcon(
+            QIcon(
+                ":/icon/bilibilidownloader/ui/assert/bilibili.svg",
+            ),
+        )
 
         self.analyze_type = "video"
         self._task_manager = TaskManager()

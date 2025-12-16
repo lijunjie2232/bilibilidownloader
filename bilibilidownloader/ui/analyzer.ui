@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../icon.qrc">
+    <normaloff>:/icon/bilibilidownloader/ui/assert/analyze.svg</normaloff>:/icon/bilibilidownloader/ui/assert/analyze.svg</iconset>
+  </property>
   <widget class="QListWidget" name="video_part_list">
    <property name="geometry">
     <rect>
@@ -23,10 +27,10 @@
     </rect>
    </property>
    <property name="verticalScrollBarPolicy">
-    <enum>Qt::ScrollBarAlwaysOn</enum>
+    <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
    </property>
    <property name="horizontalScrollBarPolicy">
-    <enum>Qt::ScrollBarAsNeeded</enum>
+    <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
    </property>
   </widget>
   <widget class="QToolButton" name="max_video">
@@ -42,7 +46,7 @@
     <string>1080P</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QLabel" name="vq_label">
@@ -58,7 +62,7 @@
     <string>最高画质：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="aq_text">
@@ -74,7 +78,7 @@
     <string>最高音质：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QToolButton" name="max_audio">
@@ -90,7 +94,7 @@
     <string>132K</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QPushButton" name="apply_filter_btn">
@@ -171,7 +175,7 @@
     <string>下载选中项</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QLineEdit" name="path_line">
@@ -233,7 +237,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>MP4</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QLabel" name="fmt_text">
@@ -249,7 +253,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>输出格式：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QToolButton" name="url_btn">
@@ -265,7 +269,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>113696558814120</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QProgressBar" name="analyzer_init_bar">
@@ -307,7 +311,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>输入编码：</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QToolButton" name="codec_select">
@@ -323,7 +327,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>AVC</string>
    </property>
    <property name="popupMode">
-    <enum>QToolButton::MenuButtonPopup</enum>
+    <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
    </property>
   </widget>
   <widget class="QLabel" name="current_select_count_label">
@@ -339,7 +343,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>current: 0</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="total_count_label">
@@ -355,7 +359,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>total: 0</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="fetch_count_label">
@@ -371,7 +375,7 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>fetch: 0</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="total_select_count_label">
@@ -387,10 +391,12 @@ QProgressBar::chunk{background-color:#fd79a8;}</string>
     <string>total: 0</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../icon.qrc"/>
+ </resources>
  <connections/>
 </ui>

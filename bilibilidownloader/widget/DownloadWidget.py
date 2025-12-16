@@ -191,7 +191,7 @@ class DownloadTaskWidget(QWidget, Ui_DownloadTask):
             )
         else:
             self.thumbnail_label.setText("No Image")
-    
+
     @property
     def bytes_update_occurred(self):
         return self._download_task.bytes_update_occurred
@@ -385,7 +385,7 @@ class DownloadTask(QThread):
 
         # net component
         self.client = None
-    
+
     @property
     def bytes_update_occurred(self):
         return self._task_bytes_update_occurred
@@ -612,17 +612,19 @@ class DownloadTask(QThread):
             print_exc()
             self._task_error_occurred.emit(e)
         finally:
-            self._loop.run_until_complete(self._loop.shutdown_asyncgens())
-            self._loop.close()
+            if self._loop and not self._loop.is_closed():
+                self._loop.run_until_complete(self._loop.shutdown_asyncgens())
+                self._loop.close()
+                self._loop = None
 
     def run(self, loop=None):
-        if self.is_running:
-            return
-        self._loop = loop or asyncio.new_event_loop()
-        asyncio.set_event_loop(self._loop)
-        self._init_download()
 
         try:
+            if self.is_running:
+                return
+            self._loop = loop or asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+            self._init_download()
             self._loop.run_until_complete(self.do_download())
         except asyncio.CancelledError as e:
             logger.warning(e)

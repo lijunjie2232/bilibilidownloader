@@ -1,0 +1,21 @@
+[project]
+name = "bilibilidownloader"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "lijunjie2232",email = "2533584225@qq.com"}
+]
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+"bilibilicore",
+"sqlalchemy",
+"PYQt6",
+"pyqt6-tools",
+"PYQt6-plugins",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

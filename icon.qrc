@@ -1,8 +1,13 @@
+<!DOCTYPE RCC>
 <RCC>
   <qresource prefix="icon">
+    <file>bilibilidownloader/ui/assert/settings.svg</file>
+    <file>bilibilidownloader/ui/assert/qrcode.svg</file>
+    <file>bilibilidownloader/ui/assert/analyze.svg</file>
     <file>bilibilidownloader/ui/assert/pending.svg</file>
     <file>bilibilidownloader/ui/assert/resume.svg</file>
     <file>bilibilidownloader/ui/assert/pause.svg</file>
     <file>bilibilidownloader/ui/assert/cancel.svg</file>
+    <file>bilibilidownloader/ui/assert/bilibili.svg</file>
   </qresource>
 </RCC>

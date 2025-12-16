@@ -7,12 +7,12 @@ from typing import List
 from bilibilicore.config import Config
 from loguru import logger
 from PySide6.QtCore import (
+    QMutex,
     QMutexLocker,
     QObject,
     QRecursiveMutex,
     QThread,
     Signal,
-    QMutex,
 )
 
 from bilibilidownloader.utils import connect_component

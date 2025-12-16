@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../icon.qrc">
+    <normaloff>:/icon/bilibilidownloader/ui/assert/settings.svg</normaloff>:/icon/bilibilidownloader/ui/assert/settings.svg</iconset>
+  </property>
   <property name="styleSheet">
    <string notr="true"/>
   </property>
@@ -436,6 +440,8 @@ QGroupBox::title {
    </property>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../icon.qrc"/>
+ </resources>
  <connections/>
 </ui>

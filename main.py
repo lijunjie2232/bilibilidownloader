@@ -1,11 +1,10 @@
 # main.py
-import sys
-import os
 import logging
-from pathlib import Path
-from PySide6.QtWidgets import QApplication
+import sys
+
 from PySide6.QtCore import QCoreApplication, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication
+
 from bilibilidownloader import MainWindow, __version__
 
 
@@ -15,7 +14,8 @@ def setup_environment():
     """
     # Set application attributes before creating QApplication
     QCoreApplication.setApplicationName("BilibiliDownloader")
-    QCoreApplication.setApplicationVersion(__version__)  # Use version from __init__.py
+    # Use version from __init__.py
+    QCoreApplication.setApplicationVersion(__version__)
     QCoreApplication.setOrganizationName("BilibiliDownloader")
 
     # Enable high DPI scaling
@@ -70,4 +70,5 @@ if __name__ == "__main__":
         sys.exit(exit_code)
     except Exception as e:
         logging.exception("Application failed to start")
+        logging.error(e)
         sys.exit(1)
