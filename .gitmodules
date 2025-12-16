@@ -1,0 +1,3 @@
+[submodule "third_module/bilibilicore"]
+	path = third_module/bilibilicore
+	url = https://github.com/lijunjie2232/bilibilicore

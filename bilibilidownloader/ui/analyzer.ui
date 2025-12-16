@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="../../icon.qrc">
-    <normaloff>:/icon/bilibilidownloader/ui/assert/analyze.svg</normaloff>:/icon/bilibilidownloader/ui/assert/analyze.svg</iconset>
-  </property>
   <widget class="QListWidget" name="video_part_list">
    <property name="geometry">
     <rect>

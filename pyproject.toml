@@ -9,7 +9,6 @@ readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
 "bilibilicore",
-"sqlalchemy",
 "PYQt6",
 "pyqt6-tools",
 "PYQt6-plugins",

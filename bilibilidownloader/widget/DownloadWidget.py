@@ -72,7 +72,7 @@ class TaskOp(Enum):
 # Add these imports at the top of the file
 import asyncio
 
-import aiohttp
+# import aiohttp
 
 
 class DownloadTaskWidget(QWidget, Ui_DownloadTask):

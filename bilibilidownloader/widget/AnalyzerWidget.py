@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
     QToolButton,
     QWidget,
 )
+from httpx import get
 
 from bilibilidownloader.ui import __MODULE_PATH__, Ui_Analyzer, Ui_AnalyzerTask
 from bilibilidownloader.utils import (
@@ -241,9 +242,8 @@ class AnalyzerWidget(QDialog, Ui_Analyzer):
             )
 
         except Exception as e:
-            raise e
             self.alart(str(e), "error")
-            self.close()
+            raise e
 
     def _videos_occurred_handler(self, analyzer, videos):
         self.setVideoList(analyzer, videos)
@@ -289,8 +289,8 @@ class AnalyzerWidget(QDialog, Ui_Analyzer):
         # self._analyzer._videos_occurred.connect(self._videos_occurred_handler)
         # partial(self.set_progress, bar=self.analyzer_init_bar)
         # self._analyzer._error_occurred.connect(self.alart)
+        self.setWindowTitle(getattr(self._analyzer, "title", "Analyzer"))
         self._analyzer.task_init()
-        self.setWindowTitle(self._analyzer.title)
 
     def set_progress(self, bar, value, total):
         bar.setMaximum(total)
@@ -815,7 +815,7 @@ class AnalyzeTask(
         self.error_label.setText(msg)
         self.error_label.setVisible(True)
 
-    @thread
+    # @thread
     def init_components(self):
 
         self.video_select.setEnabled(self.inited)

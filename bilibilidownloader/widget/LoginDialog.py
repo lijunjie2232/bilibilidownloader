@@ -35,7 +35,6 @@ class LoginDialog(QDialog, Ui_LoginDialog):
         self.init_data()
         self.check_qrcode()
 
-
     def init_components(self):
         connect_component(
             self.cancel_btn,
@@ -56,7 +55,7 @@ class LoginDialog(QDialog, Ui_LoginDialog):
         if self.isclosed:
             return
         self.isclosed = True
-    
+
     def closeDialog(self, _=None):
         if self.isclosed:
             return

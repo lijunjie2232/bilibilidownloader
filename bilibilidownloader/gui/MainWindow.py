@@ -1,8 +1,8 @@
 import sys
+from functools import partial
 from io import BytesIO
 from time import sleep
 
-from functools import partial
 import qrcode
 from bilibilicore.api import Passport, User
 from bilibilicore.config import Config
@@ -70,6 +70,8 @@ class MainWindow(
                 ":/icon/bilibilidownloader/ui/assert/bilibili.svg",
             ),
         )
+
+        self._finished = 0
 
         self.analyze_type = "video"
         self._task_manager = TaskManager()
@@ -236,7 +238,6 @@ class MainWindow(
             login_dialog.closeDialog()
         except Exception as e:
             logger.error(e)
-            
 
     def setting_op_triggered(self):
 
