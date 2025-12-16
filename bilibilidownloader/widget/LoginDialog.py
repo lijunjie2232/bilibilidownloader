@@ -3,8 +3,9 @@ from time import sleep
 
 import qrcode
 from bilibilicore.api import Passport
+from bilibilicore.config import Config
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QImage, QPixmap, QIcon
+from PySide6.QtGui import QCloseEvent, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QDialog, QLabel
 
 from bilibilidownloader.ui import Ui_LoginDialog
@@ -13,6 +14,7 @@ from bilibilidownloader.utils import connect_component, thread
 
 class LoginDialog(QDialog, Ui_LoginDialog):
     _qr_login_finished = Signal(bool)
+    _do_refresh_qrcode = Signal()
 
     def __init__(
         self,
@@ -24,7 +26,7 @@ class LoginDialog(QDialog, Ui_LoginDialog):
                 ":/icon/bilibilidownloader/ui/assert/qrcode.svg",
             ),
         )
-        
+
         self._passport = Passport()
         self._qrcode_url = None
         self._qrcode_key = None
@@ -32,6 +34,21 @@ class LoginDialog(QDialog, Ui_LoginDialog):
         self.isclosed = False
         self.init_components()
         self.init_data()
+
+        self._qr_login_finished.connect(
+            self.login_succeed,
+        )
+        self._do_refresh_qrcode.connect(
+            self.refresh_qrcode,
+        )
+
+    def login_succeed(self):
+        Config().save_session()
+        QTimer.singleShot(
+            0,
+            self.accept if self.succeed else self.reject,
+        )
+        return
 
     def init_components(self):
         connect_component(
@@ -56,7 +73,6 @@ class LoginDialog(QDialog, Ui_LoginDialog):
         self.draw_qrcode()
         self.check_qrcode()
 
-    @thread
     def draw_qrcode(self):
         # 创建二维码图像
         qr = qrcode.QRCode(
@@ -87,6 +103,7 @@ class LoginDialog(QDialog, Ui_LoginDialog):
         result = self._passport.get_qrcode()
         self._qrcode_url = result["data"]["url"]
         self._qrcode_key = result["data"]["qrcode_key"]
+        self.draw_qrcode()
 
     @thread
     def check_qrcode(self):
@@ -122,22 +139,14 @@ class LoginDialog(QDialog, Ui_LoginDialog):
             if result_code:
                 # close message box
                 self.succeed = True
-                break
+                self._qr_login_finished.emit(self.succeed)
+                return
             else:
                 if isinstance(result_code, bool):
                     self.setWindowTitle("扫码登录")
                 elif result_code == -1:
-                    self.refresh_qrcode()
-                    self.draw_qrcode()
+                    self._do_refresh_qrcode.emit()
                 elif result_code == 0:
                     # clear qrcode and set text
                     self.setWindowTitle("已扫描，等待确认")
             sleep(3)
-
-        self._qr_login_finished.emit(self.succeed)
-        QTimer.singleShot(
-            0,
-            self.accept if self.succeed else self.reject,
-        )
-
-        return
