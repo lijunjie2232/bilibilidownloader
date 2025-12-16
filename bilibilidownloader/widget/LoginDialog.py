@@ -3,7 +3,6 @@ from time import sleep
 
 import qrcode
 from bilibilicore.api import Passport
-from bilibilicore.config import Config
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QDialog, QLabel
@@ -34,21 +33,8 @@ class LoginDialog(QDialog, Ui_LoginDialog):
         self.isclosed = False
         self.init_components()
         self.init_data()
+        self.check_qrcode()
 
-        self._qr_login_finished.connect(
-            self.login_succeed,
-        )
-        self._do_refresh_qrcode.connect(
-            self.refresh_qrcode,
-        )
-
-    def login_succeed(self):
-        Config().save_session()
-        QTimer.singleShot(
-            0,
-            self.accept if self.succeed else self.reject,
-        )
-        return
 
     def init_components(self):
         connect_component(
@@ -57,21 +43,31 @@ class LoginDialog(QDialog, Ui_LoginDialog):
             self.closeDialog,
         )
 
+        self._do_refresh_qrcode.connect(
+            self.refresh_qrcode,
+        )
+        connect_component(
+            self.finished,
+            "connect",
+            self.on_finished,
+        )
+
+    def on_finished(self, *_, **__):
+        if self.isclosed:
+            return
+        self.isclosed = True
+    
     def closeDialog(self, _=None):
         if self.isclosed:
             return
         self.isclosed = True
-        print("self close")
         if self.succeed:
             self.accept()
         else:
             self.reject()
 
-    @thread
     def init_data(self):
         self.refresh_qrcode()
-        self.draw_qrcode()
-        self.check_qrcode()
 
     def draw_qrcode(self):
         # 创建二维码图像
@@ -103,6 +99,8 @@ class LoginDialog(QDialog, Ui_LoginDialog):
         result = self._passport.get_qrcode()
         self._qrcode_url = result["data"]["url"]
         self._qrcode_key = result["data"]["qrcode_key"]
+        print("QR Code URL:", self._qrcode_url)
+        print("QR Code Key:", self._qrcode_key)
         self.draw_qrcode()
 
     @thread

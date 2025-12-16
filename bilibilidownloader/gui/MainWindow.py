@@ -2,6 +2,7 @@ import sys
 from io import BytesIO
 from time import sleep
 
+from functools import partial
 import qrcode
 from bilibilicore.api import Passport, User
 from bilibilicore.config import Config
@@ -82,7 +83,6 @@ class MainWindow(
             "triggered",
             self.setting_op_triggered,
         )
-        self._finished = 0
 
         self.link_type_selector_init(self.link_type_selector)
 
@@ -206,6 +206,10 @@ class MainWindow(
 
     def login_op_triggered(self):
         if self.user is not None:
+            try:
+                Passport().exit()
+            except Exception as e:
+                logger.error(e)
             print("login" if self.user is None else f"logout({self.name_label.text()})")
             self.user = None
             self.name_label.setText("未登录")
@@ -216,18 +220,23 @@ class MainWindow(
             connect_component(
                 login_dialog,
                 "_qr_login_finished",
-                self._handle_qr_login_finished,
+                partial(self._handle_qr_login_finished, login_dialog),
             )
-            connect_component(
-                login_dialog,
-                "finished",
-                login_dialog.closeDialog,
-            )
+            # connect_component(
+            #     login_dialog,
+            #     "finished",
+            #     login_dialog.on_finished,
+            # )
             login_dialog.show()
 
-    def _handle_qr_login_finished(self, succeed):
+    def _handle_qr_login_finished(self, login_dialog, succeed):
         if succeed:
             self.user_init()
+        try:
+            login_dialog.closeDialog()
+        except Exception as e:
+            logger.error(e)
+            
 
     def setting_op_triggered(self):
 
